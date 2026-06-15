@@ -49,22 +49,37 @@ log_unit_maf ~ Altitud
 
 The `ungauged_catchments` layer has no altitude field. For this standalone demo, the script assigns each target the nearest gauged-station altitude. This is a placeholder. For production use, replace it with outlet altitude, station altitude, or catchment-mean altitude from a DEM or trusted metadata source.
 
+### `demo_laaha.R`
+
+Runs the two-step regression kriging approach of Laaha et al. (2013) — **not** the unified universal top-kriging of `demo_utk.R`. The procedure follows Laaha et al. Section 2.2 ("Extending Top-Kriging with an External Drift Function"):
+
+1. Fit `lm(obs ~ Altitude)` on gauged catchments as the deterministic drift model.
+2. Compute residuals `resid = obs - drift`.
+3. Ordinary top-krige the residuals over catchment supports.
+4. Superimpose: `predicted_obs = drift + kriged_residual`.
+5. Rescale by target `Area^c2` to get dimensional MAF.
+
+Uses the local `utop` development package (`devtools::load_all("..")`) for the top-kriging step with `formulaString = resid ~ 1`. The drift and kriging weights are estimated **separately** — the regression first, then the residual variogram and kriging. In `demo_utk.R`, by contrast, the trend and kriging weights are solved **together** in a single augmented system.
+
+**CV simplification note.** Laaha et al. (2013, Section 3.5) re-fit the regression for each left-out point. This demo fits the regression once on all data and then uses `rtopKrige(cv = TRUE)` on the residuals. The drift component in CV is therefore slightly optimistic. A production comparison should re-fit the regression in each LOO fold; the simplification is documented, not hidden.
+
 ## Leave-one-out CV comparison on gauged MAF
 
 | Method | KGE2012 | PBIAS | RMSE | NSE | NSElog |
 |---|---:|---:|---:|---:|---:|
 | Top-Kriging | 0.963 | 2.45 | 0.697 | 0.978 | 0.945 |
 | Universal Top-Kriging | 0.971 | 2.04 | 0.673 | 0.979 | 0.940 |
+| Laaha Two-Step TK+ED | 0.957 | 0.333 | 0.833 | 0.968 | 0.937 |
 | Ordinary Kriging | 0.960 | 0.162 | 0.916 | 0.961 | 0.929 |
 | Universal Kriging | 0.978 | -1.60 | 0.816 | 0.969 | 0.955 |
 
 ## Ungauged MAF predictions (approximate because ungauged target altitude is unknown)
 
-| Target | Top-Kriging | Universal Top-Kriging | Ordinary Kriging | Universal Kriging |
-|---|---:|---:|---:|---:|
-| Ahr_3 | 10.436 | 10.442 | 11.454 | 10.766 |
-| Gader_1 | 6.178 | 6.303 | 5.789 | 5.512 |
-| Isel_4 | 2.226 | 2.303 | 2.153 | 2.245 |
+| Target | Top-Kriging | Universal Top-Kriging | Laaha Two-Step TK+ED | Ordinary Kriging | Universal Kriging |
+|---|---:|---:|---:|---:|---:|
+| Ahr_3 | 10.436 | 10.442 | 9.977 | 11.454 | 10.766 |
+| Gader_1 | 6.178 | 6.303 | 5.481 | 5.789 | 5.512 |
+| Isel_4 | 2.226 | 2.303 | 2.419 | 2.153 | 2.245 |
 
 
 ## References
