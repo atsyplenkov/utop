@@ -141,11 +141,7 @@ ungauged_obs_pred <- ungauged_drift + ungauged_resid_kriged
 
 # Step 5: Rescale to dimensional MAF.
 ungauged_maf <- st_drop_geometry(UngaugedCatchments) |>
-  transmute(
-    Locatin,
-    Altitude,
-    MAF_pred = ungauged_obs_pred * (Are_km2^c2)
-  )
+  transmute(Locatin, Altitude, MAF_pred = ungauged_obs_pred * (Are_km2^c2))
 
 print(ungauged_maf)
 
