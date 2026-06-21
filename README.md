@@ -40,9 +40,7 @@ UTOP_DIAGNOSTICS=true Rscript -e "devtools::test()"
 
 ## Linting and formatting
 
-This project uses [`jarl`](https://github.com/posit-dev/jarl) for linting and
-[`air`](https://github.com/posit-dev/air) for formatting R code. Configuration
-lives in `jarl.toml` and `air.toml` at the repository root.
+This project uses [`jarl`](https://github.com/etiennebacher/jarl) for linting and [`air`](https://github.com/posit-dev/air) for formatting R code. Configuration lives in `jarl.toml` and `air.toml` at the repository root.
 
 ```sh
 jarl check R tests
