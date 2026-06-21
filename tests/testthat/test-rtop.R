@@ -50,7 +50,7 @@ test_that("spatial cross-validation keeps the legacy correlation anchor", {
 
   expect_equal(
     cor(rtop_cv$predictions$observed, rtop_cv$predictions$var1.pred),
-    0.1678744283,
+    0.167324265652400,
     tolerance = 1e-7
   )
 })
@@ -89,32 +89,32 @@ test_that("spatial simulation stays anchored to the seeded legacy run", {
 
   expect_equal(
     rtop_sim_2$simulations@data$sim1[1],
-    0.0118376913842713,
+    0.0118349997842537,
     tolerance = 1e-7
   )
   expect_equal(
     rtop_sim_2$simulations@data$sim2[1],
-    0.0115167066168208,
+    0.0115152470755103,
     tolerance = 1e-7
   )
   expect_equal(
     rtop_sim_2$simulations@data$sim2[2],
-    0.0103000858291926,
+    0.0103075931751047,
     tolerance = 1e-7
   )
   expect_equal(
     rtop_sim_3$simulations@data$sim1[1],
-    0.012591110590178,
+    0.0125934486588040,
     tolerance = 1e-7
   )
   expect_equal(
     rtop_sim_3$simulations@data$sim2[1],
-    0.0119980665507906,
+    0.0120003913823317,
     tolerance = 1e-7
   )
   expect_equal(
     rtop_sim_3$simulations@data$sim3[14],
-    0.0199404132758299,
+    0.0199191982053638,
     tolerance = 1e-7
   )
 })

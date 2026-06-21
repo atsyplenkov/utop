@@ -21,8 +21,8 @@ test_that("sf kriging returns complete prediction fields", {
 test_that("sf kriging preserves the seeded prediction anchors", {
   rtop_pred <- rtopKrige(rtop_fitted)
 
-  expect_lt(abs(rtop_pred$predictions$var1.pred[1] - 0.01075158), 1e-7)
-  expect_lt(abs(rtop_pred$predictions$var1.pred[2] - 0.0107365), 1e-7)
+  expect_lt(abs(rtop_pred$predictions$var1.pred[1] - 0.0107608400347267), 1e-7)
+  expect_lt(abs(rtop_pred$predictions$var1.pred[2] - 0.0107478834280173), 1e-7)
 })
 
 test_that("sf cross-validation keeps the legacy correlation anchor", {
@@ -30,7 +30,7 @@ test_that("sf cross-validation keeps the legacy correlation anchor", {
 
   expect_equal(
     cor(rtop_cv$predictions$observed, rtop_cv$predictions$var1.pred),
-    0.4735301,
-    tolerance = 1e-6
+    0.467793385040890,
+    tolerance = 1e-7
   )
 })

@@ -185,7 +185,7 @@ rtopFitVariogram.rtopVariogramCloud <- function(
   } else {
     implicit <- NULL
   }
-  scres <- sceua(
+  scres <- sceua::sceua(
     objfunc,
     params$parInit[, 3],
     lower = params$parInit[, 1],
