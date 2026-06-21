@@ -56,7 +56,7 @@ have a column with name \code{area}.}
 the \code{rtop} package, set in \code{\link{getRtopParams}}. The argument
 params can also be used for the other methods, through the ...-argument.}
 
-\item{iprint}{print flag that is passed to \code{\link{sceua}}}
+\item{iprint}{print flag that is passed to \code{sceua::sceua}}
 
 \item{...}{Other parameters to functions called from
 \code{rtopFitVarigoram}. For the three first methods of the function,

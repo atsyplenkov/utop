@@ -96,6 +96,8 @@ rtopObj.MAF <- createRtopObject(
   formulaString = obs ~ Altitude,
   params = rtop_params
 )
+
+set.seed(21)
 rtopObj.MAF <- rtopVariogram(rtopObj.MAF)
 rtopObj.MAF <- rtopFitVariogram(rtopObj.MAF)
 rtopObj.MAF <- checkVario(rtopObj.MAF)

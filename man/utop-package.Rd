@@ -118,10 +118,5 @@ Authors:
   \item Anatoly Tsyplenkov \email{sharp.couch9400@fastmail.com}
 }
 
-Other contributors:
-\itemize{
-  \item Qingyun Duan (For the original FORTRAN code of SCE-UA, translated and modified to R in this package.) [contributor]
-}
-
 }
 \keyword{spatial}

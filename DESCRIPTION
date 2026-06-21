@@ -3,9 +3,7 @@ Type: Package
 Title: Interpolation of Data with Variable Spatial Support
 Version: 0.1.0.9000
 Authors@R: c(person("Jon Olav", "Skøien", role = c("aut", "cre"), email = "jon.skoien@gmail.com"),
-            person("Anatoly", "Tsyplenkov", role = "aut", email = "sharp.couch9400@fastmail.com"),
-            person('Qingyun', 'Duan', role = 'ctb',
-            comment = 'For the original FORTRAN code of SCE-UA, translated and modified to R in this package.'))
+            person("Anatoly", "Tsyplenkov", role = "aut", email = "sharp.couch9400@fastmail.com"))
 Imports:
         gstat,
         graphics,
@@ -15,7 +13,8 @@ Imports:
         grDevices,
         sf,
         units,
-        sp
+        sp,
+        sceua
 Suggests:
         parallel,
         intamap,

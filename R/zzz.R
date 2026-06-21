@@ -111,7 +111,7 @@ rtopVariogram <- function(object, ...) UseMethod("rtopVariogram")
 #' @param aOver a matrix with the overlapping areas of the observations, used
 #' for computation of the nugget effect.  It will normally be recomputed by the
 #' function if it is NULL and necessary
-#' @param iprint print flag that is passed to \code{\link{sceua}}
+#' @param iprint print flag that is passed to \code{sceua::sceua}
 #' @param ... Other parameters to functions called from
 #' \code{rtopFitVarigoram}. For the three first methods of the function,
 #' \code{...} can also include parameters to the last two methods.
