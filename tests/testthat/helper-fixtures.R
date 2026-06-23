@@ -18,6 +18,10 @@ utop_read_sf <- function(layer) {
   sf::st_read(utop_extdata_path(), layer, quiet = TRUE)
 }
 
+utop_demo_data <- function() {
+  readRDS(file.path(utop_extdata_path(), "demo.rds"))
+}
+
 utop_spatial_fixtures <- function() {
   observations <- utop_read_sf("observations")
   prediction_locations <- utop_read_sf("predictionLocations")
