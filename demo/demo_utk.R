@@ -14,7 +14,7 @@
 # kept in memory and are not written back to the GeoPackage.
 
 library(sf)
-devtools::load_all("..", quiet = TRUE)
+devtools::load_all()
 library(yardstick)
 library(tidyhydro)
 library(dplyr)
@@ -37,7 +37,7 @@ nselog.data.frame <- function(data, truth, estimate, na_rm = TRUE, ...) {
   )
 }
 
-input_gpkg <- "demo.gpkg"
+input_gpkg <- "demo/demo.gpkg"
 
 GaugedCatchments <- st_read(
   input_gpkg,
