@@ -62,10 +62,17 @@ rtopVariogram.SpatialPolygonsDataFrame <- function(
   }
   obs <- object@data
   sp::coordinates(obs) <- sp::coordinates(object)
-  if ("Shape_Area" %in% names(object)) {
+  if ("area" %in% names(object)) {
+    obs$area <- object$area
+  } else if ("AREA" %in% names(object)) {
+    obs$area <- object$AREA
+  } else if ("Shape_Area" %in% names(object)) {
     obs$area <- object$Shape_Area
   } else {
-    obs$area <- unlist(lapply(object@polygons, FUN = function(poly) poly@area))
+    obs$area <- unlist(lapply(
+      object@polygons,
+      FUN = function(poly) poly@area
+    ))
   }
   if (missing(formulaString)) {
     rtopVariogram(obs, params = params, ...)
