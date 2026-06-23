@@ -44,3 +44,67 @@ utop_spacetime_fixtures <- function(n_obs = 8, n_pred = 4, n_time = 3) {
 
   list(observations = st_obs_s, prediction_locations = st_pred_s, time = time)
 }
+
+utop_tndtk_spacetime_fixture <- function(
+  n_obs = 8,
+  n_pred = 3,
+  dates = as.Date("2006-01-01") + 0:4
+) {
+  if (!requireNamespace("spacetime", quietly = TRUE)) {
+    stop("spacetime not available")
+  }
+
+  demo <- utop_demo_data()
+  observations <- demo$gauged_catchments[seq_len(n_obs), ]
+  prediction_locations <- demo$ungauged_catchments[seq_len(n_pred), ]
+  codes <- as.character(observations$Cod)
+  dates <- as.Date(dates)
+
+  grid <- expand.grid(
+    Cod = codes,
+    date = dates,
+    KEEP.OUT.ATTRS = FALSE,
+    stringsAsFactors = FALSE
+  )
+  streamflow <- demo$streamflow[
+    demo$streamflow$Cod %in% codes & demo$streamflow$date %in% dates,
+    c("Cod", "date", "Q")
+  ]
+  grid <- merge(
+    grid,
+    streamflow,
+    by = c("Cod", "date"),
+    all.x = TRUE,
+    sort = FALSE
+  )
+  grid <- grid[order(grid$date, match(grid$Cod, codes)), ]
+  if (anyNA(grid$Q)) {
+    stop("Missing TNDTK streamflow values in the requested fixture")
+  }
+
+  sp_obs <- as(observations, "Spatial")
+  sp_obs$area <- sp_obs$Area_km2
+  sp_pred <- as(prediction_locations, "Spatial")
+  sp_pred$area <- sp_pred$Are_km2
+
+  time <- as.POSIXct(dates, tz = "UTC")
+  grid$obs <- grid$Q / rep(sp_obs$Area_km2, times = length(dates))
+  st_obs <- spacetime::STFDF(
+    sp_obs,
+    time,
+    data.frame(obs = grid$obs)
+  )
+  st_pred <- spacetime::STFDF(
+    sp_pred,
+    time,
+    data.frame(var1 = rep(0, dim(sp_pred)[1] * length(time)))
+  )
+
+  list(
+    observations = as(st_obs, "STSDF"),
+    prediction_locations = as(st_pred, "STSDF"),
+    streamflow = grid,
+    codes = codes,
+    time = time
+  )
+}
