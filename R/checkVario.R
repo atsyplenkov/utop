@@ -263,7 +263,7 @@ checkVario.rtopVariogramModel <- function(
     dists <- dfunc(sampleVariogram, observations, dists)
   }
 
-  Srl <- list()
+  geoms <- list()
   icomb <- 0
   polylist <- list()
   aavg <- areas[1:(length(areas) - 1)]
@@ -284,12 +284,11 @@ checkVario.rtopVariogramModel <- function(
       y1 <- -cs
       y2 <- cs
       boun <- cbind(x = c(x1, x2, x2, x1, x1), y = c(y1, y1, y2, y2, y1))
-      polyBoun <- sp::Polygon(boun)
-      Srl[[icomb]] <- sp::Polygons(list(polyBoun), ID = as.character(icomb))
+      geoms[[icomb]] <- sf::st_polygon(list(boun))
     }
   }
 
-  polys <- sp::SpatialPolygons(Srl)
+  polys <- sf::st_sf(geometry = sf::st_sfc(geoms))
   vmats <- list()
   iplot <- 0
   na <- length(areas)
@@ -323,13 +322,12 @@ checkVario.rtopVariogramModel <- function(
     i1 <- acomp[iplot, 2]
     i2 <- acomp[iplot, 1]
     ld <- length(adists)
-    poly1 <- polys[unique(c((i1 - 1) * ld + 1, ((i2 - 1) * ld + 1):(i2 * ld)))]
+    poly1 <- polys[
+      unique(c((i1 - 1) * ld + 1, ((i2 - 1) * ld + 1):(i2 * ld))),
+    ]
+    poly1$obs <- seq_len(nrow(poly1))
     lobject <- createRtopObject(
-      sp::SpatialPolygonsDataFrame(
-        poly1,
-        data = data.frame(obs = c(seq_along(poly1))),
-        match.ID = FALSE
-      ),
+      poly1,
       params = params,
       formulaString = obs ~ 1
     )
@@ -339,8 +337,8 @@ checkVario.rtopVariogramModel <- function(
       nadists <- c(0, nadists)
     }
     overlapObs <- findVarioOverlap(data.frame(
-      a1 = poly1[1]@polygons[[1]]@area,
-      a2 = poly1[2]@polygons[[1]]@area,
+      a1 = utop_area(poly1[1, ]),
+      a2 = utop_area(poly1[2, ]),
       dist = nadists
     ))
     lobject$overlapObs <- t(matrix(
