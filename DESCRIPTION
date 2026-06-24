@@ -12,15 +12,12 @@ Imports:
         utils,
         grDevices,
         sf,
+        stars,
         units,
-        sp,
         sceua
 Suggests:
         parallel,
         intamap,
-        spacetime,
-        data.table,
-        reshape2,
         testthat
 Config/testthat/edition: 3
 Description: Data with irregular spatial support, such as runoff related data or data from administrative units, can with 'utop' be interpolated to locations without observations with the top-kriging method. A description of the original package is given by Skøien et al (2014) <doi:10.1016/j.cageo.2014.02.009>.
