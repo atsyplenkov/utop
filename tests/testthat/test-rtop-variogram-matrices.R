@@ -143,6 +143,40 @@ test_that("variogram fitting, discretization, and matrices cover spatial and sf 
     debug.level = -1
   )
 
+  vmod_nugget <- rtopVariogramModel(nugget = 0.1)
+  varmat_no_nugget <- varMat(
+    sp_obs,
+    sp_pred,
+    variogramModel = vmod_nugget,
+    nugget = FALSE,
+    rresol = 4,
+    rstype = "regular",
+    debug.level = -1
+  )
+  expect_error(
+    varmat_nugget <- varMat(
+      sp_obs,
+      sp_pred,
+      variogramModel = vmod_nugget,
+      nugget = TRUE,
+      rresol = 4,
+      rstype = "regular",
+      debug.level = -1
+    ),
+    NA
+  )
+  expect_error(
+    varmat_obs_nugget <- varMat(
+      sp_obs,
+      variogramModel = vmod_nugget,
+      nugget = TRUE,
+      rresol = 4,
+      rstype = "regular",
+      debug.level = -1
+    ),
+    NA
+  )
+
   expect_equal(dim(varmat_cached$varMatObs), c(nrow(sp_obs), nrow(sp_obs)))
   expect_equal(varmat_cached$varMatObs, t(varmat_cached$varMatObs))
   expect_equal(dim(varmat_cached$varMatPredObs), c(nrow(sp_obs), nrow(sp_pred)))
@@ -152,6 +186,13 @@ test_that("variogram fitting, discretization, and matrices cover spatial and sf 
   expect_equal(dim(varmat_list$varMatObs), c(nrow(sp_obs), nrow(sp_obs)))
   expect_equal(dim(varmat_list$varMatPredObs), c(nrow(sp_obs), nrow(sp_pred)))
   expect_true(!is.null(varmat_list$varMatPredObs))
+  expect_equal(dim(varmat_nugget$varMatObs), c(nrow(sp_obs), nrow(sp_obs)))
+  expect_equal(dim(varmat_nugget$varMatPredObs), c(nrow(sp_obs), nrow(sp_pred)))
+  expect_equal(dim(varmat_obs_nugget), c(nrow(sp_obs), nrow(sp_obs)))
+  expect_true(all(is.finite(varmat_obs_nugget)))
+  expect_true(any(
+    varmat_nugget$varMatPredObs > varmat_no_nugget$varMatPredObs
+  ))
 
   expect_identical(varmat_cached$varMatObs, varmat_reuse$varMatObs)
   expect_identical(varmat_cached$varMatPredObs, varmat_reuse$varMatPredObs)

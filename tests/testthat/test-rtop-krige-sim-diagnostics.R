@@ -37,7 +37,7 @@ if (!identical(Sys.getenv("UTOP_DIAGNOSTICS"), "true")) {
     krige_sel <- rtopKrige(fit_sel, sel = 1)
     krige_cv <- rtopKrige(fit_base, cv = TRUE)
 
-    expect_s4_class(krige_sel$predictions, "SpatialPolygonsDataFrame")
+    expect_s3_class(krige_sel$predictions, "sf")
     expect_equal(nrow(krige_sel$predictions), 1)
     expect_true(all(
       c("var1.pred", "var1.var") %in% names(krige_sel$predictions)
@@ -92,7 +92,7 @@ if (!identical(Sys.getenv("UTOP_DIAGNOSTICS"), "true")) {
       debug.level = -1
     ))
 
-    expect_s4_class(sim$simulations, "SpatialPolygonsDataFrame")
+    expect_s3_class(sim$simulations, "sf")
     expect_true("area" %in% names(sim$simulations))
     expect_true("sim1" %in% names(sim$simulations))
   })

@@ -1,6 +1,6 @@
-test_that("SPDF variogram uses explicit support area", {
+test_that("sf variogram uses explicit support area", {
   demo <- utop_demo_data()
-  observations <- as(demo$gauged_catchments[1:5, ], "Spatial")
+  observations <- demo$gauged_catchments[1:5, ]
   observations$obs <- demo$gauged_catchments$MAF[1:5]
   observations$area <- seq(10, 50, by = 10)
 
@@ -15,42 +15,31 @@ test_that("SPDF variogram uses explicit support area", {
   expect_equal(vario$a2, observations$area[vario$acl2])
 })
 
-test_that("STSDF pooled variogram averages TNDTK time steps", {
-  skip_if_not_installed("spacetime")
-
-  fixture <- utop_tndtk_spacetime_fixture(n_obs = 6, n_pred = 2)
+test_that("stars pooled variogram averages TNDTK time steps", {
+  fixture <- utop_tndtk_stars_fixture(n_obs = 6, n_pred = 2)
   observations <- fixture$observations
-  obs <- as.data.frame(observations)
-  obs$sp_index <- as.integer(as.character(obs$sp.ID))
+  obs_mat <- observations[["obs"]]
 
   vario <- rtopVariogram(
     observations,
     formulaString = obs ~ 1,
     params = list(cloud = TRUE)
   )
-  pair <- obs[obs$sp_index %in% c(1, 2), c("sp_index", "timeIndex", "obs")]
-  pair_wide <- reshape(
-    pair,
-    idvar = "timeIndex",
-    timevar = "sp_index",
-    direction = "wide"
-  )
-  manual_gamma <- mean((pair_wide$obs.1 - pair_wide$obs.2)^2 / 2)
+  manual_gamma <- mean((obs_mat[1, ] - obs_mat[2, ])^2 / 2)
   pair_vario <- vario[vario$acl1 == 1 & vario$acl2 == 2, ]
+  support <- utop:::utop_stars_support(observations)
 
-  expect_s4_class(observations@sp, "SpatialPolygonsDataFrame")
+  expect_s3_class(support, "sf")
   expect_s3_class(vario, "rtopVariogramCloud")
   expect_equal(nrow(pair_vario), 1)
   expect_equal(pair_vario$np, length(fixture$time))
   expect_equal(pair_vario$gamma, manual_gamma, tolerance = 1e-12)
-  expect_equal(pair_vario$a1, observations@sp$area[1])
-  expect_equal(pair_vario$a2, observations@sp$area[2])
+  expect_equal(pair_vario$a1, support$area[1])
+  expect_equal(pair_vario$a2, support$area[2])
 })
 
-test_that("TNDTK SPDF time series interpolate with pooled variogram", {
-  skip_if_not_installed("spacetime")
-
-  fixture <- utop_tndtk_spacetime_fixture(n_obs = 8, n_pred = 3)
+test_that("TNDTK stars time series interpolate with pooled variogram", {
+  fixture <- utop_tndtk_stars_fixture(n_obs = 8, n_pred = 3)
   params <- list(
     rresol = 4,
     rstype = "regular",
@@ -75,10 +64,10 @@ test_that("TNDTK SPDF time series interpolate with pooled variogram", {
   result <- rtopKrige(rtop_obj)
   predictions <- result$predictions
 
-  expect_s4_class(predictions, "STSDF")
+  expect_s3_class(predictions, "stars")
   expect_equal(unname(dim(predictions))[1], 3)
   expect_equal(unname(dim(predictions))[2], length(fixture$time))
-  expect_true(all(is.finite(predictions@data$var1.pred)))
-  expect_true(all(is.finite(predictions@data$var1.var)))
-  expect_gt(stats::sd(predictions@data$var1.pred), 0)
+  expect_true(all(is.finite(predictions[["var1.pred"]])))
+  expect_true(all(is.finite(predictions[["var1.var"]])))
+  expect_gt(stats::sd(as.vector(predictions[["var1.pred"]])), 0)
 })

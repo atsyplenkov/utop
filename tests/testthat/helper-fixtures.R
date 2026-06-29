@@ -26,9 +26,6 @@ utop_spatial_fixtures <- function() {
   observations <- utop_read_sf("observations")
   prediction_locations <- utop_read_sf("predictionLocations")
 
-  observations <- as(observations, "Spatial")
-  prediction_locations <- as(prediction_locations, "Spatial")
-
   observations <- observations[1:30, ]
   prediction_locations <- prediction_locations[1:2, ]
   observations$obs <- observations$QSUMMER_OB / observations$AREASQKM

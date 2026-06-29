@@ -12,8 +12,8 @@ uk_base <- createRtopObject(
 uk_base <- rtopFitVariogram(uk_base, iprint = -1)
 uk_base <- rtopKrige(uk_base) # also creates varMatObs / varMatPredObs
 
-obs_xy <- sp::coordinates(fixtures$observations)
-pred_xy <- sp::coordinates(fixtures$prediction_locations)
+obs_xy <- utop:::utop_centroid_coordinates(fixtures$observations)
+pred_xy <- utop:::utop_centroid_coordinates(fixtures$prediction_locations)
 
 test_that("ukTrendMatrix builds the trend basis from the RHS", {
   observations <- fixtures$observations
@@ -197,15 +197,20 @@ test_that("sample variogram is computed from trend residuals", {
 })
 
 test_that("spatiotemporal universal kriging reproduces an exact trend", {
-  skip_if_not_installed("spacetime")
-
-  st_fixtures <- utop_spacetime_fixtures(n_obs = 8, n_pred = 4, n_time = 3)
+  st_fixtures <- utop_stars_fixtures(n_obs = 8, n_pred = 4, n_time = 3)
   st_obs <- st_fixtures$observations
   st_pred <- st_fixtures$prediction_locations
-  st_obs@sp$cov <- seq_len(8) / 2
-  st_pred@sp$cov <- runif(4, 0, 4)
+  st_obs <- utop:::utop_stars_set_attr_matrix(
+    st_obs,
+    "cov",
+    matrix(seq_len(8) / 2, nrow = 8, ncol = 3)
+  )
+  st_pred <- utop:::utop_stars_set_attr_matrix(
+    st_pred,
+    "cov",
+    matrix(runif(4, 0, 4), nrow = 4, ncol = 3)
+  )
 
-  # base OK run to get a variogram model and semivariance matrices
   base_obj <- createRtopObject(
     st_obs,
     st_pred,
@@ -220,9 +225,13 @@ test_that("spatiotemporal universal kriging reproduces an exact trend", {
   base_obj <- rtopFitVariogram(base_obj, iprint = -1)
   base_obj <- rtopKrige(base_obj)
 
-  # exact, time-invariant trend in the covariate
-  st_exact <- st_obs
-  st_exact@data$obs <- 2 + 3 * st_obs@sp$cov[st_exact@index[, 1]]
+  obs_cov <- utop:::utop_stars_attr_matrix(st_obs, "cov")
+  pred_cov <- utop:::utop_stars_attr_matrix(st_pred, "cov")
+  st_exact <- utop:::utop_stars_set_attr_matrix(
+    st_obs,
+    "obs",
+    2 + 3 * obs_cov
+  )
 
   ret <- rtopKrige(
     st_exact,
@@ -233,8 +242,11 @@ test_that("spatiotemporal universal kriging reproduces an exact trend", {
     params = list(debug.level = -1),
     wlim = Inf
   )
-  expected <- 2 + 3 * st_pred@sp$cov[ret$predictions@index[, 1]]
-  expect_equal(ret$predictions@data$var1.pred, expected, tolerance = 1e-8)
+  expect_equal(
+    as.vector(ret$predictions[["var1.pred"]]),
+    as.vector(2 + 3 * pred_cov),
+    tolerance = 1e-8
+  )
 
   ret_cv <- rtopKrige(
     st_exact,
@@ -244,17 +256,24 @@ test_that("spatiotemporal universal kriging reproduces an exact trend", {
     cv = TRUE,
     wlim = Inf
   )
-  expected_cv <- 2 + 3 * st_obs@sp$cov[ret_cv$predictions@index[, 1]]
-  expect_equal(ret_cv$predictions@data$var1.pred, expected_cv, tolerance = 1e-8)
+  expect_equal(
+    as.vector(ret_cv$predictions[["var1.pred"]]),
+    as.vector(2 + 3 * obs_cov),
+    tolerance = 1e-8
+  )
 })
 
 test_that("spatiotemporal sample variogram uses trend residuals", {
-  skip_if_not_installed("spacetime")
-
-  st_fixtures <- utop_spacetime_fixtures(n_obs = 8, n_pred = 4, n_time = 3)
+  st_fixtures <- utop_stars_fixtures(n_obs = 8, n_pred = 4, n_time = 3)
   st_obs <- st_fixtures$observations
-  st_obs@sp$cov <- seq_len(8) * 2
-  st_obs@data$obs <- st_obs@data$obs + 3 * st_obs@sp$cov[st_obs@index[, 1]]
+  st_obs <- utop:::utop_stars_set_attr_matrix(
+    st_obs,
+    "cov",
+    matrix(seq_len(8) * 2, nrow = 8, ncol = 3)
+  )
+  cov <- utop:::utop_stars_attr_matrix(st_obs, "cov")
+  obs <- utop:::utop_stars_attr_matrix(st_obs, "obs")
+  st_obs <- utop:::utop_stars_set_attr_matrix(st_obs, "obs", obs + 3 * cov)
 
   vario_raw <- rtopVariogram(st_obs, formulaString = "obs ~ 1")
   vario_res <- rtopVariogram(st_obs, formulaString = "obs ~ cov")

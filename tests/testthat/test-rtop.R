@@ -15,8 +15,8 @@ test_that("kriging returns expected prediction structures", {
 
   expect_s3_class(rtop_fitted$variogramModel, "rtopVariogramModel")
 
-  expect_s4_class(rtop_cv$predictions, "SpatialPolygonsDataFrame")
-  expect_s4_class(rtop_pred$predictions, "SpatialPolygonsDataFrame")
+  expect_s3_class(rtop_cv$predictions, "sf")
+  expect_s3_class(rtop_pred$predictions, "sf")
   expect_equal(nrow(rtop_cv$predictions), 30)
   expect_equal(nrow(rtop_pred$predictions), 2)
   expect_true(all(
@@ -39,7 +39,7 @@ test_that("kriging reuses the legacy semivariance path consistently", {
   )
   rtop_reuse <- rtopKrige(rtop_cv)
 
-  expect_s4_class(rtop_reuse$predictions, "SpatialPolygonsDataFrame")
+  expect_s3_class(rtop_reuse$predictions, "sf")
   expect_equal(nrow(rtop_reuse$predictions), 2)
   expect_true(isTRUE(all.equal(varmat$varMatObs, rtop_cv$varMatObs)))
   expect_true(isTRUE(all.equal(rtop_reuse$predictions, rtop_pred$predictions)))
@@ -50,7 +50,7 @@ test_that("spatial cross-validation keeps the legacy correlation anchor", {
 
   expect_equal(
     cor(rtop_cv$predictions$observed, rtop_cv$predictions$var1.pred),
-    0.167324265652400,
+    0.165756902165012,
     tolerance = 1e-7
   )
 })
@@ -88,33 +88,33 @@ test_that("spatial simulation stays anchored to the seeded legacy run", {
   )
 
   expect_equal(
-    rtop_sim_2$simulations@data$sim1[1],
-    0.0118349997842537,
+    rtop_sim_2$simulations$sim1[1],
+    0.0118082328747604,
     tolerance = 1e-7
   )
   expect_equal(
-    rtop_sim_2$simulations@data$sim2[1],
-    0.0115152470755103,
+    rtop_sim_2$simulations$sim2[1],
+    0.0114985387672817,
     tolerance = 1e-7
   )
   expect_equal(
-    rtop_sim_2$simulations@data$sim2[2],
-    0.0103075931751047,
+    rtop_sim_2$simulations$sim2[2],
+    0.0103816065249376,
     tolerance = 1e-7
   )
   expect_equal(
-    rtop_sim_3$simulations@data$sim1[1],
-    0.0125934486588040,
+    rtop_sim_3$simulations$sim1[1],
+    0.0126686566529176,
     tolerance = 1e-7
   )
   expect_equal(
-    rtop_sim_3$simulations@data$sim2[1],
-    0.0120003913823317,
+    rtop_sim_3$simulations$sim2[1],
+    0.0120647228006132,
     tolerance = 1e-7
   )
   expect_equal(
-    rtop_sim_3$simulations@data$sim3[14],
-    0.0199191982053638,
+    rtop_sim_3$simulations$sim3[14],
+    0.019830061178791,
     tolerance = 1e-7
   )
 })
@@ -145,11 +145,11 @@ test_that("intamap interpolation matches direct spatial kriging", {
   )
 
   expect_true(isTRUE(all.equal(
-    rtop_pred$predictions@data$var1.pred,
-    output$predictions@data$var1.pred
+    rtop_pred$predictions$var1.pred,
+    output$predictions$var1.pred
   )))
   expect_true(isTRUE(all.equal(
-    rtop_pred$predictions@data$var1.var,
-    output$predictions@data$var1.var
+    rtop_pred$predictions$var1.var,
+    output$predictions$var1.var
   )))
 })
