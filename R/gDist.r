@@ -63,6 +63,7 @@ gDist.STSDF <- function(object, ...) {
 }
 
 
+
 #' @export
 #' @rdname gDist
 gDist.sf <- function(object, object2 = NULL, ...) {
@@ -82,6 +83,16 @@ gDist.sf <- function(object, object2 = NULL, ...) {
   }
 }
 
+#' @export
+#' @rdname gDist
+gDist.stars <- function(object, object2 = NULL, ...) {
+  object <- utop_stars_support(object)
+  if (!is.null(object2)) {
+    object2 <- utop_as_sf(object2)
+  }
+  gDist(object, object2, ...)
+}
+
 
 #' @export
 #' @rdname gDist
@@ -96,7 +107,7 @@ gDist.list <- function(
   if (debug.level == 1) {
     print("Creating Ghos distances. This can take some time")
   }
-  if (inherits(object[[1]], "SpatialPoints") || inherits(object[[1]], "sf")) {
+  if (inherits(object[[1]], "sf") || inherits(object[[1]], "sfc")) {
     gDist <- varMat(
       object,
       object2,
