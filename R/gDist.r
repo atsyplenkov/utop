@@ -44,32 +44,22 @@ gDist.rtop <- function(object, params = list(), ...) {
 
 
 #' @export
-#' @rdname gDist
-gDist.SpatialPolygonsDataFrame <- function(object, object2 = NULL, ...) {
-  if (is(object2, "SpatialPolygonsDataFrame")) {
-    object2 <- as(object2, "SpatialPolygons")
-  }
-  gDist(as(object, "SpatialPolygons"), object2, ...)
+#' @noRd
+gDist.SpatialPolygonsDataFrame <- function(object, ...) {
+  utop_stop_legacy_sp(object)
 }
 
 
 #' @export
-#' @rdname gDist
-gDist.SpatialPolygons <- function(object, object2 = NULL, ...) {
-  dObs <- rtopDisc(object, ...)
-  gDistObs <- gDist(dObs, ...)
-  if (!is.null(object2)) {
-    dPred <- rtopDisc(object2, ...)
-    gDistPredObs <- gDist(dObs, dPred, ...)
-    gDistPred <- gDist(dPred, dPred, diag = TRUE, ...)
-    list(
-      gDistObs = gDistObs,
-      gDistPred = gDistPred,
-      gDistPredObs = gDistPredObs
-    )
-  } else {
-    list(gDistObs = gDistObs)
-  }
+#' @noRd
+gDist.SpatialPolygons <- function(object, ...) {
+  utop_stop_legacy_sp(object)
+}
+
+#' @export
+#' @noRd
+gDist.STSDF <- function(object, ...) {
+  utop_stop_legacy_sp(object, target = "stars")
 }
 
 
