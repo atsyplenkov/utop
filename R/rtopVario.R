@@ -98,27 +98,6 @@ rtopVariogram.sf <- function(
   var3d
 }
 
-
-#' @export
-#' @noRd
-rtopVariogram.SpatialPolygonsDataFrame <- function(object, ...) {
-  utop_stop_legacy_sp(object)
-}
-
-
-#' @export
-#' @noRd
-rtopVariogram.SpatialPointsDataFrame <- function(object, ...) {
-  utop_stop_legacy_sp(object)
-}
-
-#' @export
-#' @noRd
-rtopVariogram.STSDF <- function(object, ...) {
-  utop_stop_legacy_sp(object, target = "stars")
-}
-
-
 # Alternative binning:
 #  x <- matrix(rnorm(30000), ncol=3)
 #  breaks <- seq(-1, 1, length=5)

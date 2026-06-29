@@ -1,28 +1,5 @@
 #' @noRd
-utop_stop_legacy_sp <- function(object, target = "sf") {
-  stop(
-    paste(
-      "Legacy sp/spacetime objects are no longer supported.",
-      "Please convert",
-      paste(class(object), collapse = "/"),
-      "to",
-      target,
-      "before calling utop."
-    ),
-    call. = FALSE
-  )
-}
-
-#' @noRd
-utop_is_legacy_sp <- function(object) {
-  inherits(object, "Spatial") || inherits(object, "ST")
-}
-
-#' @noRd
 utop_as_sf <- function(object, role = "object") {
-  if (utop_is_legacy_sp(object)) {
-    utop_stop_legacy_sp(object)
-  }
   if (inherits(object, "stars")) {
     return(utop_stars_support(object))
   }
@@ -96,9 +73,6 @@ utop_centroid_coordinates <- function(object) {
 
 #' @noRd
 utop_point_coordinates <- function(object) {
-  if (utop_is_legacy_sp(object)) {
-    utop_stop_legacy_sp(object)
-  }
   if (inherits(object, "sf") || inherits(object, "sfc")) {
     coords <- sf::st_coordinates(sf::st_geometry(sf::st_as_sf(object)))
     return(coords[, 1:2, drop = FALSE])

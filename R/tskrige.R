@@ -275,10 +275,3 @@ rtopKrige.stars <- function(
   predictions <- utop_stars_set_attr_matrix(predictions, "var1.yam", yam_mat)
   list(predictions = predictions)
 }
-
-
-#' @export
-#' @noRd
-rtopKrige.STSDF <- function(object, ...) {
-  utop_stop_legacy_sp(object, target = "stars")
-}

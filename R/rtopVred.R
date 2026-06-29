@@ -24,9 +24,6 @@ vred <- function(
     } else if (is.null(a2)) {
       a2 <- a1
     }
-    if (utop_is_legacy_sp(a1) || utop_is_legacy_sp(a2)) {
-      utop_stop_legacy_sp(if (utop_is_legacy_sp(a1)) a1 else a2)
-    }
     if (inherits(a1, "sf") || inherits(a1, "sfc")) {
       a1 <- utop_point_coordinates(a1)
     }

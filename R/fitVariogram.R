@@ -245,25 +245,6 @@ rtopFitVariogram.stars <- function(object, params = list(), ...) {
   rtopFitVariogram(vario = vario, observations = object, params = params, ...)
 }
 
-#' @export
-#' @noRd
-rtopFitVariogram.SpatialPointsDataFrame <- function(object, ...) {
-  utop_stop_legacy_sp(object)
-}
-
-#' @export
-#' @noRd
-rtopFitVariogram.SpatialPolygonsDataFrame <- function(object, ...) {
-  utop_stop_legacy_sp(object)
-}
-
-#' @export
-#' @noRd
-rtopFitVariogram.STSDF <- function(object, ...) {
-  utop_stop_legacy_sp(object, target = "stars")
-}
-
-
 #' @noRd
 objfunc <- function(
   pars,

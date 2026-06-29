@@ -370,20 +370,6 @@ varMat.stars <- function(object, object2 = NULL, ...) {
 }
 
 
-#' @export
-#' @noRd
-varMat.SpatialPolygonsDataFrame <- function(object, ...) {
-  utop_stop_legacy_sp(object)
-}
-
-
-#' @export
-#' @noRd
-varMat.SpatialPolygons <- function(object, ...) {
-  utop_stop_legacy_sp(object)
-}
-
-
 #' @noRd
 varMatDefault <- function(
   object1,
@@ -737,17 +723,4 @@ varMat.list <- function(
   }
   attr(varMatrix, "variogramModel") <- variogramModel
   varMatrix
-}
-
-
-#' @export
-#' @noRd
-varMat.STSDF <- function(object, ...) {
-  utop_stop_legacy_sp(object, target = "stars")
-}
-
-#' @export
-#' @noRd
-varMat.STS <- function(object, ...) {
-  utop_stop_legacy_sp(object, target = "stars")
 }

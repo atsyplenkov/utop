@@ -43,13 +43,6 @@ rtopKrige.rtop <- function(object, varMatUpdate = FALSE, params = list(), ...) {
 
 
 #' @export
-#' @noRd
-rtopKrige.SpatialPolygonsDataFrame <- function(object, ...) {
-  utop_stop_legacy_sp(object)
-}
-
-
-#' @export
 #' @rdname rtopKrige
 rtopKrige.default <- function(
   object,

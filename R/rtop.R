@@ -103,17 +103,11 @@ createRtopObject <- function(
   if (missing(observations)) {
     stop("Observations are missing")
   }
-  if (utop_is_legacy_sp(observations)) {
-    utop_stop_legacy_sp(observations)
-  }
   observations <- utop_add_area(observations)
 
   object$observations <- observations
 
   if (!missing(predictionLocations)) {
-    if (utop_is_legacy_sp(predictionLocations)) {
-      utop_stop_legacy_sp(predictionLocations)
-    }
     predictionLocations <- utop_add_area(predictionLocations)
 
     obs_crs <- sf::st_crs(utop_as_sf(observations))

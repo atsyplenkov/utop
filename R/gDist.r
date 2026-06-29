@@ -42,27 +42,6 @@ gDist.rtop <- function(object, params = list(), ...) {
   object
 }
 
-
-#' @export
-#' @noRd
-gDist.SpatialPolygonsDataFrame <- function(object, ...) {
-  utop_stop_legacy_sp(object)
-}
-
-
-#' @export
-#' @noRd
-gDist.SpatialPolygons <- function(object, ...) {
-  utop_stop_legacy_sp(object)
-}
-
-#' @export
-#' @noRd
-gDist.STSDF <- function(object, ...) {
-  utop_stop_legacy_sp(object, target = "stars")
-}
-
-
 #' @export
 #' @rdname gDist
 gDist.sf <- function(object, object2 = NULL, ...) {

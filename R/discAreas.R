@@ -226,22 +226,3 @@ rtopDisc.stars <- function(
 ) {
   rtopDisc(utop_stars_support(object), params = params, bb = bb, ...)
 }
-
-
-#' @export
-#' @noRd
-rtopDisc.SpatialPolygonsDataFrame <- function(object, ...) {
-  utop_stop_legacy_sp(object)
-}
-
-#' @export
-#' @noRd
-rtopDisc.SpatialPolygons <- function(object, ...) {
-  utop_stop_legacy_sp(object)
-}
-
-#' @export
-#' @noRd
-rtopDisc.STSDF <- function(object, ...) {
-  utop_stop_legacy_sp(object, target = "stars")
-}
