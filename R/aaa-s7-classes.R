@@ -31,7 +31,6 @@
 #' @param var_mat_obs,var_mat_pred_obs,var_mat_pred Covariance matrices.
 #' @param var_fit,cv_info,weight,removed,uk_residual,check_vario Diagnostics
 #'   and intermediate results.
-#' @param method_parameters Method parameter summary.
 #'
 #' @name utop-s7-classes
 #' @aliases Utop
@@ -166,8 +165,7 @@ Utop <- S7::new_class(
     weight = utop_optional(),
     removed = utop_optional(),
     uk_residual = utop_optional(),
-    check_vario = utop_optional(),
-    method_parameters = utop_optional(S7::class_character)
+    check_vario = utop_optional()
   )
 )
 
@@ -225,8 +223,7 @@ utop_object_names <- c(
   weight = "weight",
   removed = "removed",
   uk_residual = "ukResidual",
-  check_vario = "checkVario",
-  method_parameters = "methodParameters"
+  check_vario = "checkVario"
 )
 
 utop_get <- function(x, name) {

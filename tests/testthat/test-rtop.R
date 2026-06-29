@@ -119,37 +119,3 @@ test_that("spatial simulation stays anchored to the seeded legacy run", {
   )
 })
 
-test_that("intamap interpolation matches direct spatial kriging", {
-  skip_if_not_installed("intamap")
-  probe <- try(useRtopWithIntamap(), silent = TRUE)
-  if (inherits(probe, "try-error")) {
-    skip("intamap does not expose estimateParameters() on this system")
-  }
-
-  set.seed(1501)
-  rtop_pred <- rtopKrige(rtop_fitted)
-
-  output <- interpolate(
-    fixtures$observations,
-    fixtures$prediction_locations,
-    optList = list(
-      formulaString = obs ~ 1,
-      gDist = TRUE,
-      cloud = FALSE,
-      nmax = 10,
-      rresol = 25,
-      hresol = 3
-    ),
-    methodName = "rtop",
-    iprint = -1
-  )
-
-  expect_true(isTRUE(all.equal(
-    rtop_pred$predictions$var1.pred,
-    output$predictions$var1.pred
-  )))
-  expect_true(isTRUE(all.equal(
-    rtop_pred$predictions$var1.var,
-    output$predictions$var1.var
-  )))
-})

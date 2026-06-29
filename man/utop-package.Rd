@@ -10,10 +10,8 @@ with an irregular support}
 This package provides geostatistical methods for analysis and interpolation
 of data that has an irregular support, such as as runoff characteristics or
 population health data. The methods in this package are based on the
-top-kriging approach suggested in Skoien et al (2006), with some extensions
-from Gottschalk (1993). This package can be used as an add-on package for
-the automatic interpolation package developed within the intamap project
-(www.intamap.org).
+top-kriging approach suggested in Skoien et al (2006), with some
+extensions from Gottschalk (1993).
 }
 \section{Workflow}{
 

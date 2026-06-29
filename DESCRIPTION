@@ -18,7 +18,6 @@ Imports:
         S7
 Suggests:
         parallel,
-        intamap,
         testthat,
         digest
 Config/testthat/edition: 3

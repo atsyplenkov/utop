@@ -164,8 +164,6 @@ rtopVariogram <- function(object, ...) UseMethod("rtopVariogram")
 #'
 #' @export
 rtopFitVariogram <- function(object, ...) UseMethod("rtopFitVariogram")
-#estimateParameters <- function(object, ...) UseMethod("estimateParameters")
-#spatialPredict      <- function(object, ...) UseMethod("spatialPredict")
 
 #' Plot variogram fitted to data with support
 #'

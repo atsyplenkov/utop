@@ -2,7 +2,7 @@
 % Please edit documentation in R/rtop.R
 \name{getRtopParams}
 \alias{getRtopParams}
-\title{Setting parameters for the intamap package}
+\title{Setting parameters for utop}
 \usage{
 getRtopParams(
   params = list(),
@@ -14,8 +14,8 @@ getRtopParams(
 }
 \arguments{
 \item{params}{An existing set of parameters for the interpolation process,
-of class \cr \code{intamapParams} or a list of parameters for modification
-of the default parameters}
+of class \code{rtopParams} or a list of parameters for modification of the
+default parameters}
 
 \item{newPar}{A \code{list} of parameters for updating \code{params} or for
 modification of the default parameters.  Possible parameters with their
@@ -123,7 +123,7 @@ A list of the parameters with class \code{rtopParams} to be included
 in the \code{object} described in \link{utop-package}
 }
 \description{
-This function sets a range of the parameters for the intamap package, to be
+This function sets a range of parameters for the interpolation process to be
 included in the object described in \code{\link{utop-package}}
 }
 \note{
@@ -148,7 +148,7 @@ system.
 }
 \examples{
 
-# Create a new set of intamapParameters, with default parameters:
+# Create a new set of parameters, with default parameters:
 params <- getRtopParams()
 # Make modifications to the default list of parameters
 params <- getRtopParams(newPar = list(gDist = TRUE, nugget = FALSE))

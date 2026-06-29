@@ -166,15 +166,15 @@ createRtopObject <- function(
 }
 
 
-#' Setting parameters for the intamap package
+#' Setting parameters for utop
 #'
-#' This function sets a range of the parameters for the intamap package, to be
+#' This function sets a range of parameters for the interpolation process to be
 #' included in the object described in \code{\link{utop-package}}
 #'
 #'
 #' @param params An existing set of parameters for the interpolation process,
-#' of class \cr \code{intamapParams} or a list of parameters for modification
-#' of the default parameters
+#' of class \code{rtopParams} or a list of parameters for modification of the
+#' default parameters
 #' @param newPar A \code{list} of parameters for updating \code{params} or for
 #' modification of the default parameters.  Possible parameters with their
 #' defaults are given below
@@ -307,7 +307,7 @@ createRtopObject <- function(
 #' @keywords spatial
 #' @examples
 #'
-#' # Create a new set of intamapParameters, with default parameters:
+#' # Create a new set of parameters, with default parameters:
 #' params <- getRtopParams()
 #' # Make modifications to the default list of parameters
 #' params <- getRtopParams(newPar = list(gDist = TRUE, nugget = FALSE))
@@ -325,13 +325,6 @@ getRtopParams <- function(
 ) {
   oldPar <- params
   dots <- list(...)
-  if (inherits(oldPar, "intamapParams") || inherits(newPar, "intamapParams")) {
-    intPar <- TRUE
-  } else {
-    intPar <- FALSE
-  }
-  oClass <- class(oldPar)
-  nClass <- class(newPar)
   if (inherits(oldPar, "rtopParams")) {
     params <- oldPar
     oldPar <- list()
@@ -381,12 +374,8 @@ getRtopParams <- function(
     params$parInit <- findParInitDefault(params$model)
   }
   params <- modifyList(params, dots)
+  class(params) <- "rtopParams"
 
-  if (intPar) {
-    class(params) <- c("rtopParams", "intamapParams")
-  } else {
-    class(params) <- "rtopParams"
-  }
   params
 }
 

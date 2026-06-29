@@ -78,8 +78,7 @@ Utop(
   weight = NULL,
   removed = NULL,
   uk_residual = NULL,
-  check_vario = NULL,
-  method_parameters = NULL
+  check_vario = NULL
 )
 }
 \arguments{
@@ -129,8 +128,6 @@ locations.}
 
 \item{var_fit, cv_info, weight, removed, uk_residual, check_vario}{Diagnostics
 and intermediate results.}
-
-\item{method_parameters}{Method parameter summary.}
 }
 \description{
 These classes provide the formal object model used by the snake_case utop

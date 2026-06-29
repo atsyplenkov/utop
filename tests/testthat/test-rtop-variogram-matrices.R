@@ -198,7 +198,7 @@ test_that("variogram fitting, discretization, and matrices cover spatial and sf 
   expect_true(all(is.finite(varmat_list$varMatPredObs)))
 })
 
-test_that("overlap and wrapper helpers cover their direct branches", {
+test_that("overlap helpers cover their direct branches", {
   overlap_self <- findOverlap(sp_obs[1:4, ], debug.level = 0)
   overlap_cross <- findOverlap(sp_obs[1:4, ], sp_obs[5:6, ], debug.level = 0)
 
@@ -207,16 +207,4 @@ test_that("overlap and wrapper helpers cover their direct branches", {
   expect_true(all(diag(overlap_self) > 0))
   expect_equal(dim(overlap_cross), c(4, 2))
   expect_true(all(overlap_cross >= 0))
-
-  est <- utop:::estimateParameters.rtop(createRtopObject(
-    sp_obs,
-    spatial$prediction_locations,
-    formulaString = "obs ~ 1",
-    params = modifyList(spatial$params, list(nugget = FALSE, gDist = FALSE))
-  ))
-  mp <- utop:::methodParameters.rtop(est)
-
-  expect_s3_class(est, "rtop")
-  expect_s3_class(est$variogramModel, "rtopVariogramModel")
-  expect_match(mp$methodParameters, "vmodel")
 })
