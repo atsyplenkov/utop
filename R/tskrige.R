@@ -1,6 +1,6 @@
 #' @export
 #' @rdname rtopKrige
-rtopKrige.STSDF <- function(
+rtopKrige.stars <- function(
   object,
   predictionLocations = NULL,
   varMatObs,
@@ -14,15 +14,15 @@ rtopKrige.STSDF <- function(
   lagExact = TRUE,
   ...
 ) {
-  if (!requireNamespace("spacetime")) {
-    stop("spacetime not available")
-  }
   params <- getRtopParams(params, ...)
   cv <- params$cv
   debug.level <- params$debug.level
   if (!cv && !isTRUE(all.equal(is.null(olags), is.null(plags)))) {
     stop(
-      "Lag times have to be given for both observations and predictionLocations, or for none of them"
+      paste(
+        "Lag times have to be given for both observations and",
+        "predictionLocations, or for none of them"
+      )
     )
   }
   if (!missing(varMat) && missing(varMatObs)) {
@@ -31,7 +31,7 @@ rtopKrige.STSDF <- function(
       if (!cv) {
         stop(paste(
           "Not cross-validation, you must provide either varMatObs",
-          " and varMatPredObs or varMat with the matrices as elements"
+          "and varMatPredObs or varMat with the matrices as elements"
         ))
       }
     } else {
@@ -39,57 +39,60 @@ rtopKrige.STSDF <- function(
       varMatPredObs <- varMat$varMatPredObs
     }
   }
+  if (missing(formulaString)) {
+    formulaString <- utop_default_formula(object)
+  }
+  if (!inherits(formulaString, "formula")) {
+    formulaString <- as.formula(formulaString)
+  }
 
+  object <- utop_stars_add_area(object)
   if (cv) {
     predictionLocations <- object
     plags <- olags
-
     varMatPredObs <- varMatObs
+  } else if (is.null(predictionLocations)) {
+    stop("predictionLocations are required unless cv = TRUE")
+  } else {
+    predictionLocations <- utop_stars_add_area(predictionLocations)
   }
-  # Universal kriging trend basis functions, evaluated once on the spatial
-  # supports (covariates must be time-invariant columns of the @sp slot).
-  tObs <- ukTrendMatrix(formulaString, object@sp, params)
+
+  obs_support <- utop_stars_support(object)
+  pred_support <- if (cv) {
+    obs_support
+  } else {
+    utop_stars_support(predictionLocations)
+  }
+
+  tObs <- ukTrendMatrix(formulaString, obs_support, params)
   tPred <- if (cv) {
     tObs
   } else {
-    ukTrendMatrix(formulaString, predictionLocations@sp, params)
+    ukTrendMatrix(formulaString, pred_support, params)
   }
-  ntime <- dim(object)[2]
-  nspace <- dim(object)[1]
-  indx <- predictionLocations@index
-  sinds <- sort(unique(indx[, 1]))
-  tinds <- sort(unique(indx[, 2]))
-  pspace <- dim(predictionLocations)[1]
-  ptime <- dim(predictionLocations)[2]
-  pfull <- if (
-    prod(dim(predictionLocations)) == dim(predictionLocations@data)[1]
-  ) {
-    TRUE
-  } else {
-    FALSE
-  }
-  if (is(predictionLocations, "STSDF")) {
-    predictionLocations@data <- cbind(
-      predictionLocations@data,
-      data.frame(var1.pred = NA, var1.var = NA, var1.yam = NA)
-    )
-  } else if (is(predictionLocations, "STS")) {
-    predictionLocations <- spacetime::STSDF(
-      predictionLocations,
-      data = data.frame(var1.pred = NA, var1.var = NA, var1.yam = NA)
-    )
-  }
-  if (is.null(olags) && prod(dim(object)) == dim(object@data)[1]) {
-    # if all stations have obs from all time steps
-    obj1 <- object[, 1]
-    if (is(predictionLocations, "STSDF")) {
-      predLoc <- predictionLocations@sp
-    } else {
-      predLoc <- predictionLocations
-    }
+
+  depVar <- as.character(formulaString[[2]])
+  obs <- utop_stars_attr_matrix(object, depVar)
+  obs2 <- obs
+  nspace <- utop_stars_nspace(object)
+  ntime <- utop_stars_ntime(object)
+  pspace <- utop_stars_nspace(predictionLocations)
+  ptime <- utop_stars_ntime(predictionLocations)
+  time_match <- match(
+    utop_stars_time(predictionLocations),
+    utop_stars_time(object)
+  )
+
+  pred_mat <- matrix(NA_real_, nrow = pspace, ncol = ptime)
+  var_mat <- matrix(NA_real_, nrow = pspace, ncol = ptime)
+  yam_mat <- matrix(NA_real_, nrow = pspace, ncol = ptime)
+
+  if (is.null(olags) && !anyNA(obs)) {
+    obs_first <- obs_support
+    obs_first[[depVar]] <- obs[, 1]
     ret <- rtopKrige.default(
-      obj1,
-      predLoc,
+      obs_first,
+      pred_support,
       varMatObs,
       varMatPredObs,
       varMat,
@@ -98,262 +101,185 @@ rtopKrige.STSDF <- function(
       wret = TRUE,
       trendObs = tObs,
       trendPred = tPred
-    ) #,
-    #sel, ...)
+    )
     weight <- ret$weight
     wvar <- ret$predictions$var1.var
-    obs <- as.data.frame(object)
-    obs <- obs[, c("sp.ID", "timeIndex", as.character(formulaString[[2]]))]
-    #   obs$timeIndex = object@index[,2]
-    obs <- reshape(
-      obs,
-      v.names = as.character(formulaString[[2]]),
-      idvar = "sp.ID",
-      timevar = "timeIndex",
-      direction = "wide"
-    )
-    if (interactive() && debug.level == 1 && length(sinds) > 1) {
-      pb <- txtProgressBar(1, length(sinds), style = 3)
-    }
-    for (istat in seq_along(sinds)) {
-      isind <- sinds[istat]
-      ttinds <- which(indx[, 1] == isind)
+    for (istat in seq_len(pspace)) {
       lweight <- weight[istat, ]
-      # sweep() on a data.frame returns a data.frame, but the subsequent
-      # matrix multiplication requires a numeric matrix. Convert early and
-      # drop the 1-row prediction matrix to a plain vector for sweep().
-      obs_mat <- as.matrix(obs[, 2:dim(obs)[2]])
-      preds <- lweight %*% obs_mat
-      diffs <- sweep(obs_mat, 2, drop(preds))
-      var1.yam <- t(lweight) %*% (diffs^2)
-      #      var1.var = t(lweights) %*% ((as.matrix(Obs[iobs,depVar]@data)-as.numeric(var1.pred))^2)
-
-      if (!pfull) {
-        ptinds <- indx[ttinds, 1]
-        preds <- preds[ptinds]
-        var1.yam <- var1.yam[ptinds]
-      }
-      predictionLocations@data$var1.pred[ttinds] <- preds
-      predictionLocations@data$var1.var[ttinds] <- wvar[istat]
-      predictionLocations@data$var1.yam[ttinds] <- var1.yam
-      if (interactive() && debug.level == 1 && length(sinds) > 1) {
-        setTxtProgressBar(pb, istat)
+      for (itime in seq_len(ptime)) {
+        otime <- time_match[itime]
+        if (is.na(otime)) {
+          next
+        }
+        pred <- sum(lweight * obs[, otime])
+        pred_mat[istat, itime] <- pred
+        var_mat[istat, itime] <- wvar[istat]
+        yam_mat[istat, itime] <- sum(lweight * (obs[, otime] - pred)^2)
       }
     }
-    if (interactive() && debug.level == 1 && length(sinds) > 1) close(pb)
+  } else if (is.null(olags)) {
+    oldind <- NULL
+    for (itime in seq_len(ptime)) {
+      otime <- time_match[itime]
+      if (is.na(otime)) {
+        next
+      }
+      newind <- which(!is.na(obs[, otime]))
+      if (length(newind) == 0) {
+        next
+      }
+      if (is.null(oldind) || !isTRUE(all.equal(newind, oldind))) {
+        oldind <- newind
+        ppq <- obs_support[newind, ]
+        ppq[[depVar]] <- obs[newind, otime]
+        vmat <- varMatObs[newind, newind]
+        vpredobs <- if (cv) {
+          NULL
+        } else {
+          varMatPredObs[newind, , drop = FALSE]
+        }
+        ret <- rtopKrige.default(
+          object = ppq,
+          predictionLocations = if (cv) NULL else pred_support,
+          varMatObs = vmat,
+          varMatPredObs = vpredobs,
+          params = params,
+          formulaString = formulaString,
+          wret = TRUE,
+          debug.level = 0,
+          trendObs = tObs[newind, , drop = FALSE],
+          trendPred = if (cv) NULL else tPred
+        )
+        weight <- ret$weight
+        wvar <- ret$predictions$var1.var
+      }
+      ob <- obs[newind, otime]
+      preds <- weight %*% ob
+      if (cv) {
+        target <- newind
+      } else {
+        target <- seq_len(pspace)
+      }
+      pred_mat[target, itime] <- as.vector(preds)
+      var_mat[target, itime] <- wvar
+      for (istat in seq_along(target)) {
+        diffs <- ob - preds[istat]
+        yam_mat[target[istat], itime] <- sum(weight[istat, ] * (diffs^2))
+      }
+    }
   } else {
-    object@sp$sindex <- sindex <- 1:nspace
-    object@time$tindex <- tindex <- 1:ntime
-    predictionLocations@sp$sindex <- 1:pspace
-    predictionLocations@time$tindex <- 1:ptime
-    obs <- as.data.frame(object)
-    depVar <- as.character(formulaString[[2]])
-    obs <- obs[, c("sp.ID", "timeIndex", depVar)]
-    #   obs$timeIndex = object@index[,2]
-    if (!requireNamespace("reshape2")) {
-      stop("reshape2 not available")
+    obs_coords <- utop_centroid_coordinates(obs_support)
+    pred_coords <- utop_centroid_coordinates(pred_support)
+    if (is.null(plags)) {
+      stop("plags must be supplied when olags are supplied")
     }
-    obs <- reshape2::dcast(obs, sp.ID ~ timeIndex)
-    #        reshape(obs, v.names = as.character(formulaString[[2]]),
-    #                    idvar = "sp.ID", timevar = "timeIndex", direction = "wide")
-    obs <- obs[order(as.numeric(as.character(obs$sp.ID))), ]
-    obs <- as.matrix(obs[, 2:(ntime + 1)])
-
-    if (!cv || !is.null(olags)) {
-      ploc <- as.data.frame(predictionLocations)
-      ploc <- cbind(ploc, var = 1)
-      ploc <- ploc[, c("sp.ID", "timeIndex", "var")]
-      ploc$sp.ID <- as.numeric(as.character(ploc$sp.ID))
-      ploc <- reshape2::dcast(ploc, sp.ID ~ timeIndex)
-      ploc <- as.matrix(ploc)
-      #    spobs = NULL
+    if (length(olags) != nspace || length(plags) != pspace) {
+      stop(paste(
+        "olags and plags must match the number of",
+        "observation/prediction supports"
+      ))
     }
-    if (interactive() && debug.level == 1 && ntime > 1) {
-      pb <- txtProgressBar(1, ntime, style = 3)
-    }
-    spPredLoc <- if (!cv) predictionLocations@sp else NULL
-    if (is.null(olags)) {
+    for (istat in seq_len(pspace)) {
+      ppred <- pred_support[istat, ]
+      rolags <- olags - plags[istat]
+      nbefore <- max(0, -floor(min(rolags)))
+      nafter <- ceiling(max(c(rolags, 1)))
+      obsb <- cbind(
+        matrix(NA_real_, nrow = nspace, ncol = nbefore),
+        obs2,
+        matrix(NA_real_, nrow = nspace, ncol = nafter)
+      )
+      obs[,] <- NA_real_
+      if (!lagExact) {
+        rolags <- round(rolags, 0)
+        for (jstat in seq_len(nspace)) {
+          obs[jstat, ] <- obsb[
+            jstat,
+            (nbefore + 1 + rolags[jstat]):(nbefore + ntime + rolags[jstat])
+          ]
+        }
+      } else {
+        rdiff <- rolags - floor(rolags)
+        for (jstat in seq_len(nspace)) {
+          nf <- (nbefore + 1 + floor(rolags[jstat])):(nbefore +
+            ntime +
+            floor(rolags[jstat]))
+          nl <- (nbefore + 1 + ceiling(rolags[jstat])):(nbefore +
+            ntime +
+            ceiling(rolags[jstat]))
+          obs[jstat, ] <- obsb[jstat, nf] * (1 - rdiff[jstat]) +
+            obsb[jstat, nl] * rdiff[jstat]
+        }
+      }
+      if (cv) {
+        vorder <- order(varMatObs[istat, ])
+      } else {
+        # varMatPredObs stores observations in rows and predictions in columns.
+        vorder <- order(varMatPredObs[, istat])
+      }
       oldind <- NULL
-      newkrige <- 0
-      for (itime in 1:ptime) {
-        newind <- which(!is.na(obs[, itime]))
+      for (itime in seq_len(ptime)) {
+        jtime <- time_match[itime]
+        if (is.na(jtime)) {
+          next
+        }
+        newind <- vorder[vorder %in% which(!is.na(obs[, jtime]))]
+        if (cv) {
+          newind <- newind[!newind %in% istat]
+        }
+        if (is.numeric(params$nmax) && length(newind) > params$nmax) {
+          newind <- newind[seq_len(params$nmax)]
+        }
         if (length(newind) == 0) {
           next
         }
-        #    print(paste(1, istat, itime, length(newind)))
         if (is.null(oldind) || !isTRUE(all.equal(newind, oldind))) {
           oldind <- newind
-          newkrige <- newkrige + 1
-          ppq <- object[, itime]
+          ppq <- obs_support[newind, ]
+          ppq$intvar <- obs[newind, jtime]
           vmat <- varMatObs[newind, newind]
-          if (cv) {
-            vpredobs <- NULL
+          vpredobs <- if (cv) {
+            varMatObs[newind, istat, drop = FALSE]
           } else {
-            vpredobs <- varMatPredObs[newind, ]
+            varMatPredObs[newind, istat, drop = FALSE]
           }
           ret <- rtopKrige.default(
             object = ppq,
-            predictionLocations = spPredLoc,
+            ppred,
             varMatObs = vmat,
             varMatPredObs = vpredobs,
             params = params,
-            formulaString = formulaString,
+            formulaString = intvar ~ 1,
             wret = TRUE,
             debug.level = 0,
+            cv = FALSE,
             trendObs = tObs[newind, , drop = FALSE],
-            trendPred = if (cv) NULL else tPred
-          ) #,
+            trendPred = tPred[istat, , drop = FALSE]
+          )
           weight <- ret$weight
           wvar <- ret$predictions$var1.var
         }
-        ob <- obs[, itime]
-        ob <- ob[!is.na(ob)]
-        preds <- weight %*% ob
-
-        var1.yam <- rep(NA, dim(weight)[1])
-        for (istat in 1:dim(weight)[1]) {
-          diffs <- ob - preds[istat]
-          var1.yam[istat] <- sum(weight[istat, ] * t(diffs^2))
-        }
-
-        itind <- tinds[itime]
-        ttinds <- which(indx[, 2] == itind)
-
-        predictionLocations@data$var1.pred[ttinds] <- preds
-        predictionLocations@data$var1.var[ttinds] <- wvar
-        predictionLocations@data$var1.yam[ttinds] <- var1.yam
-        if (interactive() && debug.level == 1 && ntime > 1) {
-          setTxtProgressBar(pb, itime)
-        }
-      }
-    } else {
-      ntot <- dim(predictionLocations@data)[1]
-      if (interactive() && debug.level == 1 && ntime > 1) {
-        pb <- txtProgressBar(1, ntot, style = 3)
-      }
-      itot <- 0
-      objsp <- object@sp
-      objsp <- sp::SpatialPointsDataFrame(
-        sp::SpatialPoints(objsp),
-        data = objsp@data
-      )
-      newkrige <- 0
-      obs2 <- obs
-      for (istat in 1:pspace) {
-        #       neigh = which(distm < maxdist)
-
-        ispace <- predictionLocations@sp@data$sindex[istat]
-        pxts <- as.data.frame(predictionLocations[istat, ])
-        stpred <- predictionLocations@sp[istat, ]
-        distm <- sp::spDistsN1(
-          sp::coordinates(object@sp),
-          sp::coordinates(stpred)
-        )
-        ppred <- sp::SpatialPoints(stpred)
-        rolags <- olags - plags[istat] # longer lags will be positive, i.e., use future observations
-        nbefore <- -floor(min(rolags))
-        nafter <- ceiling(max(c(rolags, 1)))
-        naadd1 <- matrix(NA, nrow = nspace, ncol = nbefore) #, dimnames = list(as.character(1:nbefore), names(obs)))
-        naadd2 <- matrix(NA, nrow = nspace, ncol = nafter) #, dimnames = list(names(obs)as.character(1:nafter)))
-        obsb <- cbind(naadd1, cbind(obs2, naadd2))
-        obs[,] <- NA
-        if (!lagExact) {
-          rolags <- round(rolags, 0)
-          for (jstat in 1:nspace) {
-            obs[jstat, ] <- obsb[
-              jstat,
-              (nbefore + 1 + rolags[jstat]):(nbefore + ntime + rolags[jstat])
-            ]
-          }
-        } else {
-          rdiff <- rolags - floor(rolags)
-          for (jstat in 1:nspace) {
-            nf <- (nbefore + 1 + floor(rolags[jstat])):(nbefore +
-              ntime +
-              floor(rolags[jstat]))
-            nl <- (nbefore + 1 + ceiling(rolags[jstat])):(nbefore +
-              ntime +
-              ceiling(rolags[jstat]))
-            obs[jstat, ] <- obsb[jstat, nf] *
-              (1 - rdiff[jstat]) +
-              obsb[jstat, nl] * rdiff[jstat]
-          }
-        }
-        oldind <- NULL
-        ntl <- length(pxts$tindex)
-        preds <- rep(NA, ntl)
-        var1.yam <- rep(NA, ntl)
-        var1.var <- rep(NA, ntl)
-        tms <- as.numeric(as.character(pxts$tindex))
-        if (cv) {
-          vorder <- order(varMatObs[istat, ])
-        } else {
-          vorder <- order(varMatPredObs[istat])
-        }
-        for (itime in seq_along(tms)) {
-          jtime <- tms[itime]
-          tp <- ploc[istat, jtime]
-          if (is.na(tp)) {
-            next
-          }
-          newind <- vorder[vorder %in% which(!is.na(obs[, jtime]))]
-          if (cv) {
-            newind <- newind[-which(newind == istat)]
-          }
-          if (is.numeric(params$nmax) && length(newind) > params$nmax) {
-            newind <- newind[1:params$nmax]
-          }
-          if (length(newind) == 0) {
-            next
-          }
-
-          newind <- newind[newind %in% vorder]
-          #    print(paste(1, istat, itime, length(newind)))
-          if (is.null(oldind) || !isTRUE(all.equal(newind, oldind))) {
-            oldind <- newind
-            newkrige <- newkrige + 1
-            #      print(paste(2, istat, itime, length(newind), newkrige))
-            ppq <- objsp[newind, ]
-            ppq$intvar <- obs[newind, jtime]
-            vmat <- varMatObs[newind, newind]
-            vpredobs <- varMatPredObs[newind, istat, drop = FALSE]
-            #    fmstring = as.formula(paste(names(ppq)[1], "~1"))
-            ret <- rtopKrige.default(
-              object = ppq,
-              ppred,
-              varMatObs = vmat,
-              varMatPredObs = vpredobs,
-              params = params,
-              formulaString = intvar ~ 1,
-              wret = TRUE,
-              debug.level = 0,
-              cv = FALSE,
-              trendObs = tObs[newind, , drop = FALSE],
-              trendPred = tPred[istat, , drop = FALSE]
-            ) #,
-            weight <- ret$weight
-            wvar <- ret$predictions$var1.var
-          }
-          preds[itime] <- sum(weight * obs[newind, jtime])
-          diffs <- obs[newind, jtime] - preds[itime]
-          var1.yam[itime] <- sum(weight * (diffs^2))
-          var1.var[itime] <- wvar
-          itot <- itot + 1
-          if (interactive() && debug.level == 1 && ntime > 1) {
-            setTxtProgressBar(pb, itot)
-          }
-        }
-        #        print(paste(1, istat, itime, length(newind), newkrige))
-
-        itind <- tinds[itime]
-        ttinds <- which(indx[, 1] == ispace)
-
-        predictionLocations@data$var1.pred[ttinds] <- preds
-        predictionLocations@data$var1.var[ttinds] <- var1.var
-        predictionLocations@data$var1.yam[ttinds] <- var1.yam
+        pred <- sum(weight * obs[newind, jtime])
+        pred_mat[istat, itime] <- pred
+        var_mat[istat, itime] <- wvar
+        yam_mat[istat, itime] <- sum(weight * (obs[newind, jtime] - pred)^2)
       }
     }
-    if (interactive() && debug.level == 1 && ntime > 1) close(pb)
+    if (debug.level > 2) {
+      print(list(obs_coords = obs_coords, pred_coords = pred_coords))
+    }
   }
-  list(predictions = predictionLocations)
+
+  predictions <- predictionLocations
+  predictions <- utop_stars_set_attr_matrix(predictions, "var1.pred", pred_mat)
+  predictions <- utop_stars_set_attr_matrix(predictions, "var1.var", var_mat)
+  predictions <- utop_stars_set_attr_matrix(predictions, "var1.yam", yam_mat)
+  list(predictions = predictions)
+}
+
+
+#' @export
+#' @noRd
+rtopKrige.STSDF <- function(object, ...) {
+  utop_stop_legacy_sp(object, target = "stars")
 }
