@@ -1,5 +1,3 @@
-# jarl-ignore-file internal_function: testing internal functions
-
 fixtures <- utop_spatial_fixtures()
 
 set.seed(1501)

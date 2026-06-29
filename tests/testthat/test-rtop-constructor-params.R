@@ -1,5 +1,3 @@
-# jarl-ignore-file internal_function: testing internal functions
-
 test_that("constructor and parameter flow cover inference, coercion, and projection checks", {
   spatial <- utop_spatial_subset_fixtures(n_obs = 6, n_pred = 2)
   sf_fixtures <- utop_sf_subset_fixtures(n_obs = 6, n_pred = 2)
