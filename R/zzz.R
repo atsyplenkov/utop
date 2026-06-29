@@ -6,12 +6,11 @@
 #' an areal support.
 #'
 #'
-#' @param object object of class \code{rtop} (see \link{utop-package}) or a
-#' \cr \code{\link[sp:SpatialPolygons]{SpatialPolygonsDataFrame}} or
-#' \code{\link[sp:SpatialPoints]{SpatialPointsDataFrame}} with information
-#' about observations. If \cr \code{object} is a \cr
-#' \code{\link[sp:SpatialPoints]{SpatialPointsDataFrame}}, it must have a
-#' column with name \code{area}.
+#' @param object object of class \code{rtop} (see \link{utop-package}), an
+#'   \code{\link[sf]{sf}} object with areal observations, or a vector data cube
+#'   with \code{stars}. Observation data must include an
+#'   \code{area} column/attribute or have polygon geometries from which area can
+#'   be computed.
 #' @param formulaString formula that defines the dependent variable as a linear
 #' model of independent variables; suppose the dependent variable has name
 #' \code{z}, for ordinary and simple kriging use the formula \code{z~1}; for
@@ -25,17 +24,13 @@
 #' used to overrule the cloud parameter in params.
 #' @param abins possibility to set areal bins (not yet implemented)
 #' @param dbins possibility to set distance bins (not yet implemented)
-#' @param data.table an option to use data.table internally for the variogram
-#' computation for \code{\link[spacetime]{STSDF}}-objects
 #' @param discPoints list of discretisation points of the observation areas
 #' from \code{\link{rtopDisc}}, only used for block-averaging of
 #' coordinate-based trend basis functions when the formula describes
 #' universal kriging and \code{ukTrendSupport = "block"}; computed internally
 #' when needed and not supplied
 #' @param ... parameters to other functions called, e.g. gstat's
-#' \code{\link[gstat]{variogram}}-function and to
-#' \code{\link{rtopVariogram.SpatialPointsDataFrame}} when the method is called
-#' with an object of a different class
+#' \code{\link[gstat]{variogram}}-function
 #' @return The function creates a variogram, either of type
 #' \code{rtopVariogram} or \code{rtopVariogramCloud}. This variogram is based
 #' on the \code{\link[gstat]{variogram}} function from gstat, but has
@@ -43,10 +38,8 @@
 #' An rtop-object with the variogram added is returned if the function is
 #' called with an rtop-object as argument.
 #'
-#' For spatio-temporal objects (\code{\link[spacetime]{STSDF}}), the variogram
-#' is the spatially variogram, averaged for all time steps. There is a
-#' possibility to use data.table internally in this function, which can improve
-#' computation time for some cases.
+#' For spatiotemporal \code{stars} vector data cubes, the variogram is spatial
+#' and averaged over all time steps.
 #' @note The variogram cloud is similar to the variogram cloud from
 #' \code{\link[gstat]{gstat}}, with the area/length added to the resulting
 #' data.frame. The binned variogram is also based on the area or length, in
@@ -93,12 +86,11 @@ rtopVariogram <- function(object, ...) UseMethod("rtopVariogram")
 #' \code{rtopVariogramCloud}, or an object with class \code{rtop} that includes
 #' the sample variograms.
 #'
-#' The object can also be of class \code{\link[sp]{SpatialPolygonsDataFrame}}
-#' or \cr \code{\link[sp]{SpatialPointsDataFrame}} with observations. If
-#' \code{object} is a \cr \code{\link[sp]{SpatialPointsDataFrame}}, it must
-#' have a column with name \code{area}.
-#' @param observations the observations, passed as a Spatial*DataFrame object,
-#' if object is an \cr \code{rtopVariogram} or \code{rtopVariogramCloud}
+#' The object can also be an \code{\link[sf]{sf}} object or a
+#' \code{stars} vector data cube with observations.
+#' @param observations the observations, passed as an \code{sf} or
+#' \code{stars} object if object is an \code{rtopVariogram} or
+#' \code{rtopVariogramCloud}
 #' @param params a set of parameters, used to modify the default parameters for
 #' the \code{rtop} package, set in \code{\link{getRtopParams}}. The argument
 #' params can also be used for the other methods, through the ...-argument.
@@ -276,9 +268,9 @@ checkVario <- function(object, ...) UseMethod("checkVario")
 #' Calculate geostatistical distances (Ghosh-distances) between areas
 #'
 #'
-#' @param object object of class \code{\link[sp]{SpatialPolygons}} or
-#' \code{\link{rtopDisc}}; or object of class \code{rtop} with such boundaries
-#' and/or discretized elements (the individual areas)
+#' @param object object of class \code{\link[sf]{sf}} or \code{\link{rtopDisc}};
+#' or object of class \code{rtop} with such boundaries and/or discretized
+#' elements (the individual areas)
 #' @param params a set of parameters, used to modify the default parameters for
 #' the \code{rtop} package, set in \code{\link{getRtopParams}}. The argument
 #' params can also be used for the other methods, through the ...-argument.
@@ -300,10 +292,9 @@ checkVario <- function(object, ...) UseMethod("checkVario")
 #' TRUE}, the function returns an array of the geostatistical distance within
 #' each of the elements in the list.
 #'
-#' If called with one \code{\link[sp]{SpatialPolygons}} or
-#' \code{\link[sp]{SpatialPolygonsDataFrame}} or the function returns a list
+#' If called with one \code{\link[sf]{sf}} object, the function returns a list
 #' with one matrix with geostatistical distances between the elements of the
-#' object. If called with two objects, the list will also containt a matrix of
+#' object. If called with two objects, the list will also contain a matrix of
 #' the geostatistical distances between the elements of the two objects, and an
 #' array of the geostatistical distances within the elements of the second
 #' object.
@@ -383,10 +374,9 @@ gDist <- function(object, ...) UseMethod("gDist")
 #' reused when discretizing smaller supports within the large one, e.g.
 #' subcatchments within larger catchments.
 #'
-#' @param object object of class \code{\link[sp]{SpatialPolygons}} or
-#' \code{\link[sp:SpatialPolygons]{SpatialPolygonsDataFrame}} or
-#' \code{rtopVariogram}, or an object with class \code{rtop} that includes one
-#' of the above
+#' @param object object of class \code{\link[sf]{sf}},
+#' \code{stars}, or \code{rtopVariogram}, or an object with class
+#' \code{rtop} that includes one of the above
 #' @param bb boundary box, usually modified to be the common boundary box for
 #' two spatial object
 #' @param params possibility to pass parameters to modify the default
@@ -453,9 +443,6 @@ rtopDisc <- function(object, ...) UseMethod("rtopDisc")
 #' \code{\link{rtopDisc}} if necessary} \item{gDistPred = FALSE}{use
 #' geostatistical distance for semivariogram matrices} \item{gDist}{parameter
 #' to set jointly \code{gDistEst = gDistPred = gDist}} }
-#' @param overlapObs matrix with observations that overlap each other
-#' @param overlapPredObs matrix with \code{observations} and
-#' \code{predictionLocations} that overlap each other
 #' @param coor1 coordinates of centroids of \code{object}
 #' @param coor2 coordinates of centre-of-gravity of \code{object2}
 #' @param maxdist maximum distance between areas for inclusion in semivariogrma
@@ -479,9 +466,9 @@ rtopDisc <- function(object, ...) UseMethod("rtopDisc")
 #' the variogram Model has been changed, or if observation and/or prediction
 #' locations have been changed.
 #'
-#' If an \code{rtop}-object contains observations and/or predictionLocations of
-#' type \code{\link[spacetime]{STSDF}}, the covariance matrix is computed based
-#' on the spatial properties of the object.
+#' If an \code{rtop}-object contains observations and/or predictionLocations as
+#' \code{stars} vector data cubes, the covariance matrix is
+#' computed from the spatial supports.
 #' @author Jon Olav Skoien
 #' @seealso \code{\link{gDist}}
 #' @references Skoien J. O., R. Merz, and G. Bloschl. Top-kriging -
@@ -549,18 +536,18 @@ varMat <- function(object, ...) UseMethod("varMat")
 #' seen in the resulting object, under the name \code{removed}.
 #'
 #' Kriging of time series is possible when \code{observations} and
-#' \code{predictionLocations} are spatiotemporal objects of type
-#' \code{\link[spacetime]{STSDF}}. The interpolation is still spatial, in the
-#' sense that the regularisation of the variograms are just done using the
-#' spatial extent of the observations, not a possible temporal extent, such as
-#' done by Skoien and Bloschl (2007). However, it is possible to make
-#' predictions based on observations from different time steps, through the use
-#' of the lag-vectors. These vectors describe a typical "delay" for each
-#' observation and prediction location. This delay could for runoff related
-#' variables be similar to travel time to each gauging location. For a certain
-#' prediction location, earlier time steps would be picked for neighbours with
-#' shorter travel time and later time steps for neighbours with slower travel
-#' times.
+#' \code{predictionLocations} are \code{stars} vector data cubes
+#' with one spatial \code{sfc} dimension and one time dimension. The
+#' interpolation is still spatial, in the sense that regularisation of the
+#' variograms uses the spatial extent of the observations, not a possible
+#' temporal extent, such as done by Skoien and Bloschl (2007). However, it is
+#' possible to make predictions based on observations from different time steps,
+#' through the use of the lag-vectors. These vectors describe a typical
+#' "delay" for each observation and prediction location. This delay could for
+#' runoff related variables be similar to travel time to each gauging location.
+#' For a certain prediction location, earlier time steps would be picked for
+#' neighbours with shorter travel time and later time steps for neighbours with
+#' slower travel times.
 #'
 #' The lagExact parameter indicates whether to use a weighted average of two
 #' time steps, or just the time step which is closest to the difference in lag
@@ -577,7 +564,8 @@ varMat <- function(object, ...) UseMethod("varMat")
 #' parameter \code{ukTrendSupport} (see \code{\link{getRtopParams}}). The
 #' sample variogram is in this case computed from the residuals against an
 #' OLS fit of the trend. For spatiotemporal interpolation the trend variables
-#' have to be time-invariant columns of the \code{sp}-slot.
+#' have to be time-invariant stars attributes; time-varying stars attributes
+#' are not used as support-level trend covariates.
 #'
 #' The use of lag times should in theory increase the computation time, but
 #' might, due to different computation methods, even speed up the computation
@@ -586,14 +574,14 @@ varMat <- function(object, ...) UseMethod("varMat")
 #' test olags = rep(0, `dim(observations)[1]`) and similar for
 #' predictionLocations.
 #'
-#' @param object object of class \code{rtop} or
-#' \code{\link[sp]{SpatialPolygonsDataFrame}} or \code{\link[spacetime]{STSDF}}
+#' @param object object of class \code{rtop}, \code{\link[sf]{sf}}, or
+#' \code{stars}
 #' @param varMatUpdate logical; if TRUE, also existing variance matrices will
 #' be recomputed, if FALSE, only missing variance matrices will be computed,
 #' see also \code{\link{varMat}}
-#' @param predictionLocations \code{\link[sp]{SpatialPolygons}} or
-#' \code{\link[sp]{SpatialPolygonsDataFrame}} or \code{\link[spacetime]{STSDF}}
-#' with prediction locations. NULL if cross validation is to be performed.
+#' @param predictionLocations \code{\link[sf]{sf}} or
+#' \code{stars} object with prediction locations. NULL if cross
+#' validation is to be performed.
 #' @param varMatObs covariance matrix of observations, where diagonal must
 #' consist of internal variance, typically generated from call to
 #' \code{\link{varMat}}
@@ -636,11 +624,12 @@ varMat <- function(object, ...) UseMethod("varMat")
 #' neighbours, respectively, and \code{wlim}, the limit for the absolute values
 #' of the weights. It can also be useful to set \code{singularSolve} if some of
 #' the areas are almost similar, see also details below.
-#' @return If called with \code{\link[sp]{SpatialPolygonsDataFrame}}, the
-#' function returns a \cr \code{\link[sp]{SpatialPolygonsDataFrame}} with
-#' predictions, either at the locations defined in \cr
-#' \code{predictionLocations}, or as leave-one-out cross-validation predicitons
-#' at the same locations as in object if \code{cv = TRUE}
+#' @return If called with \code{\link[sf]{sf}}, the function returns an
+#' \code{sf} object with predictions, either at the locations defined in
+#' \code{predictionLocations}, or as leave-one-out cross-validation predictions
+#' at the same locations as in object if \code{cv = TRUE}. For
+#' \code{stars}, a stars object with prediction attributes is
+#' returned.
 #'
 #' If called with an rtop-object, the function returns the same object with the
 #' predictions added to the object.
@@ -722,9 +711,8 @@ rtopKrige <- function(object, ...) UseMethod("rtopKrige")
 #'   uncertainty. This could be overestimated compared to the uncertainty which
 #'   is possible based on rainfall.
 #'
-#' @param object object of class \code{rtop} or
-#' \code{\link[sp]{SpatialPolygonsDataFrame}} or \code{sf}
-#' (\code{\link[sf]{st_sf}}) or \code{NULL}
+#' @param object object of class \code{rtop}, \code{\link[sf]{sf}}, or
+#' \code{NULL}
 #' @param varMatUpdate logical; if TRUE, also existing variance matrices will
 #' be recomputed, if FALSE, only missing variance matrices will be computed,
 #' see also \code{\link{varMat}}
@@ -744,9 +732,8 @@ rtopKrige <- function(object, ...) UseMethod("rtopKrige")
 #' it for some reason crashes.
 #' @param debug.level logical that controls some output, will override the
 #' object parameters
-#' @param predictionLocations \code{\link[sp]{SpatialPolygons}} or
-#' \code{\link[sp]{SpatialPolygonsDataFrame}} or \code{sf}-object with
-#' locations for simulations.
+#' @param predictionLocations \code{\link[sf]{sf}} object with locations for
+#' simulations.
 #' @param varMatObs covariance matrix of possible observations, where diagonal
 #' must consist of internal variance, typically generated from call to
 #' \code{\link{varMat}}
@@ -759,12 +746,10 @@ rtopKrige <- function(object, ...) UseMethod("rtopKrige")
 #' \code{\link{rtopVariogramModel}}
 #' @param ... possible modification of the object parameters or default
 #' parameters.
-#' @return If called with \code{\link[sp]{SpatialPolygons}} or \code{sf} as
-#' predictionLocations and either \cr
-#' \code{\link[sp]{SpatialPolygonsDataFrame}}, \code{sf} or \code{NULL} for
-#' observations, the function returns a\cr
-#' \code{\link[sp]{SpatialPolygonsDataFrame}} or \code{sf} with simulations at
-#' the locations defined in \cr \code{predictionLocations}
+#' @return If called with \code{sf} as predictionLocations and either
+#' \code{sf} or \code{NULL} for observations, the function returns an
+#' \code{sf} object with simulations at the locations defined in
+#' \code{predictionLocations}
 #'
 #' If called with an rtop-object, the function returns the same object with the
 #' simulations added to the object.
@@ -816,8 +801,8 @@ rtopKrige <- function(object, ...) UseMethod("rtopKrige")
 #' rtopObj12 <- rtopSim(rtopObj11, nsim = 10, beta = 0.01,
 #'                     varMatUpdate = TRUE)
 #'
-#' sp::summary(data.frame(rtopObj10$simulations))
-#' sp::summary(data.frame(rtopObj12$simulations))
+#' summary(data.frame(rtopObj10$simulations))
+#' summary(data.frame(rtopObj12$simulations))
 #'
 #' }
 #'

@@ -17,132 +17,42 @@ rtopVariogram.sf <- function(
   object,
   formulaString,
   params = list(),
-  discPoints = NULL,
-  ...
-) {
-  if (missing(object)) {
-    stop("rtopVariogram: Observations are missing")
-  }
-  if (!missing(formulaString) && hasUkTrend(formulaString)) {
-    detr <- ukDetrendForVariogram(object, formulaString, params, discPoints)
-    object <- detr$object
-    formulaString <- detr$formulaString
-  }
-  obs <- sf::st_drop_geometry(object)
-  sp::coordinates(obs) <- suppressWarnings(sf::st_coordinates(sf::st_centroid(
-    object
-  )))
-  if (!"area" %in% names(obs)) {
-    obs$area <- units::set_units(sf::st_area(object), NULL)
-  }
-  if (missing(formulaString)) {
-    rtopVariogram(obs, params = params, ...)
-  } else {
-    rtopVariogram(obs, formulaString, params = params, ...)
-  }
-}
-
-
-#' @export
-#' @rdname rtopVariogram
-rtopVariogram.SpatialPolygonsDataFrame <- function(
-  object,
-  formulaString,
-  params = list(),
-  discPoints = NULL,
-  ...
-) {
-  if (missing(object)) {
-    stop("rtopVariogram: Observations are missing")
-  }
-  if (!missing(formulaString) && hasUkTrend(formulaString)) {
-    detr <- ukDetrendForVariogram(object, formulaString, params, discPoints)
-    object <- detr$object
-    formulaString <- detr$formulaString
-  }
-  obs <- object@data
-  sp::coordinates(obs) <- sp::coordinates(object)
-  if ("area" %in% names(object)) {
-    obs$area <- object$area
-  } else if ("AREA" %in% names(object)) {
-    obs$area <- object$AREA
-  } else if ("Shape_Area" %in% names(object)) {
-    obs$area <- object$Shape_Area
-  } else {
-    obs$area <- unlist(lapply(
-      object@polygons,
-      FUN = function(poly) poly@area
-    ))
-  }
-  if (missing(formulaString)) {
-    rtopVariogram(obs, params = params, ...)
-  } else {
-    rtopVariogram(obs, formulaString, params = params, ...)
-  }
-}
-
-
-#' @export
-#' @rdname rtopVariogram
-rtopVariogram.SpatialPointsDataFrame <- function(
-  object,
-  formulaString,
-  params = list(),
   cloud,
-  abins,
-  dbins,
+  discPoints = NULL,
   ...
 ) {
-  # If params is intamapParams, they will here be included in rtopParams
+  if (missing(object)) {
+    stop("rtopVariogram: Observations are missing")
+  }
   if (!inherits(params, "rtopParams")) {
     params <- getRtopParams(params, ...)
   }
-  # amul refers to the number of areal bins per order of magnitude
-  # dmul refers to the number of distance bins per order of magnitude
-  amul <- params$amul
-  dmul <- params$dmul
-  if (missing(cloud)) {
-    cloud <- params$cloud
-  }
-
-  observations <- object
-  if (missing(observations)) {
-    stop("rtopVariogram: Observations are missing")
-  }
-  if (!("area") %in% names(observations)) {
-    if ("AREA" %in% names(observations)) {
-      observations$area <- observations$AREA
-    } else {
-      stop(
-        "rtopVariogram: Observations do not include the area of the polygons"
-      )
-    }
-  }
-  #  stop("rtopVariogram: Observations do not include area (polygons) or length (lines)")
+  object <- utop_add_area(object)
   if (missing(formulaString)) {
-    if ("obs" %in% names(observations)) {
-      formulaString <- "obs ~ 1"
-    } else if ("value" %in% names(observations)) {
-      formulaString <- "value ~ 1"
-    } else if (length(names(observations@data)) == 1) {
-      formulaString <- paste(names(observations@data), "~ 1")
-    } else {
-      stop("formulaString is missing and cannot be found from data")
-    }
+    formulaString <- utop_default_formula(object)
     warning(paste("formulaString missing, using", formulaString))
   }
   if (!inherits(formulaString, "formula")) {
     formulaString <- as.formula(formulaString)
   }
+  if (hasUkTrend(formulaString)) {
+    detr <- ukDetrendForVariogram(object, formulaString, params, discPoints)
+    object <- detr$object
+    formulaString <- detr$formulaString
+  }
 
+  observations <- suppressWarnings(sf::st_centroid(object))
+  observations$area <- utop_area(object)
   clvar <- gstat::variogram(formulaString, observations, cloud = TRUE, ...)
   .BigInt <- attr(clvar, ".BigInt")
   clvar$ord <- clvar$np
   clvar <- as.data.frame(clvar)
+  clvar$a1 <- observations$area[clvar$left]
+  clvar$a2 <- observations$area[clvar$right]
 
-  clvar$a1 <- observations@data$area[clvar$left]
-  clvar$a2 <- observations@data$area[clvar$right]
-
+  if (missing(cloud)) {
+    cloud <- params$cloud
+  }
   if (cloud) {
     clvar$acl1 <- clvar$left
     clvar$acl2 <- clvar$right
@@ -152,8 +62,8 @@ rtopVariogram.SpatialPointsDataFrame <- function(
     attr(var3d, ".BigInt") <- .BigInt
     var3d$np <- 1
   } else {
-    abins <- adfunc(NULL, observations, amul)
-    dbins <- dfunc(NULL, observations, dmul)
+    abins <- adfunc(NULL, observations, params$amul)
+    dbins <- dfunc(NULL, observations, params$dmul)
     observations$acl <- findInterval(observations$area, abins)
     clvar$acl1 <- observations$acl[clvar$left]
     clvar$acl2 <- observations$acl[clvar$right]
@@ -189,6 +99,27 @@ rtopVariogram.SpatialPointsDataFrame <- function(
 }
 
 
+#' @export
+#' @noRd
+rtopVariogram.SpatialPolygonsDataFrame <- function(object, ...) {
+  utop_stop_legacy_sp(object)
+}
+
+
+#' @export
+#' @noRd
+rtopVariogram.SpatialPointsDataFrame <- function(object, ...) {
+  utop_stop_legacy_sp(object)
+}
+
+#' @export
+#' @noRd
+rtopVariogram.STSDF <- function(object, ...) {
+  utop_stop_legacy_sp(object, target = "stars")
+}
+
+
+
 # Alternative binning:
 #  x <- matrix(rnorm(30000), ncol=3)
 #  breaks <- seq(-1, 1, length=5)
@@ -199,6 +130,7 @@ rtopVariogram.SpatialPointsDataFrame <- function(
 #  table(complete.cases(xints))
 #  xtabs(~ ., xints)
 
+
 ###############################
 #' @export
 #' @rdname rtopVariogram
@@ -207,7 +139,7 @@ rtopVariogram.rtop <- function(object, params = list(), ...) {
   observations <- object$observations
   formulaString <- object$formulaString
 
-  #calling rtopVariogram.SpatialPolygonsDataFrame
+  # calling the class-specific rtopVariogram method
   var3d <- rtopVariogram(
     observations,
     formulaString,
@@ -228,20 +160,16 @@ rtopVariogram.rtop <- function(object, params = list(), ...) {
 
 #' @export
 #' @rdname rtopVariogram
-rtopVariogram.STSDF <- function(
+rtopVariogram.stars <- function(
   object,
   formulaString,
   params = list(),
   cloud,
   abins,
   dbins,
-  data.table = FALSE,
   discPoints = NULL,
   ...
 ) {
-  if (!requireNamespace("spacetime")) {
-    stop("spacetime not available")
-  }
   if (!inherits(params, "rtopParams")) {
     params <- getRtopParams(params, ...)
   }
@@ -250,112 +178,54 @@ rtopVariogram.STSDF <- function(
   if (missing(cloud)) {
     cloud <- params$cloud
   }
-  observations <- object
-  debug.level <- params$debug.level
-  if (missing(observations)) {
+  if (missing(object)) {
     stop("rtopVariogram: Observations are missing")
   }
-  if (!("area") %in% names(observations@sp)) {
-    if ("AREA" %in% names(observations@sp)) {
-      observations@sp$area <- observations@sp$AREA
-    } else {
-      stop(
-        "rtopVariogram: Observations do not include the area of the polygons"
-      )
-    }
-  }
+  observations <- utop_stars_add_area(object)
+  support <- utop_stars_support(observations)
   if (missing(formulaString)) {
-    if ("obs" %in% names(observations@data)) {
-      formulaString <- "obs ~ 1"
-    } else if ("value" %in% names(observations@data)) {
-      formulaString <- "value ~ 1"
-    } else if (length(names(observations@data)) == 1) {
-      formulaString <- paste(names(observations@data), "~ 1")
-    } else {
-      stop("formulaString is missing and cannot be found from data")
-    }
+    formulaString <- utop_default_formula(observations)
     warning(paste("formulaString missing, using", formulaString))
   }
   if (!inherits(formulaString, "formula")) {
     formulaString <- as.formula(formulaString)
   }
   depvar <- as.character(formulaString[[2]])
+  obs_mat <- utop_stars_attr_matrix(observations, depvar)
 
-  diffsN1 <- function(x, y) y - x
-
-  nspace <- dim(observations)[1]
-  observations@sp$vindex <- 1:nspace
-  ntime <- dim(observations)[2]
-  observations@sp$vindex <- vindex <- 1:nspace
-  obsdf <- as.data.frame(observations)[, c("timeIndex", "vindex", depvar)]
-  # For universal kriging formulas, compute the sample variogram from the
-  # OLS residuals against the (time-invariant) spatial trend basis.
   if (hasUkTrend(formulaString)) {
-    Fsp <- ukTrendMatrix(formulaString, observations@sp, params, discPoints)
-    obsdf[[depvar]] <- ukResiduals(
-      formulaString,
-      depValues = obsdf[[depvar]],
-      trendMatrix = Fsp[obsdf$vindex, , drop = FALSE]
+    nspace <- utop_stars_nspace(observations)
+    ntime <- utop_stars_ntime(observations)
+    Fsp <- ukTrendMatrix(formulaString, support, params, discPoints)
+    obs_mat <- matrix(
+      ukResiduals(
+        formulaString,
+        depValues = as.vector(obs_mat),
+        trendMatrix = Fsp[rep(seq_len(nspace), times = ntime), , drop = FALSE]
+      ),
+      nrow = nspace
     )
   }
+
+  nspace <- utop_stars_nspace(observations)
+  ntime <- utop_stars_ntime(observations)
   vmat <- matrix(0, nrow = nspace, ncol = nspace)
   indmat <- vmat
-  if (interactive() && debug.level) {
-    pb <- txtProgressBar(1, ntime, style = 3)
-  }
-  if (data.table && !requireNamespace("data.table")) {
-    warning("data.table not available, continuing without")
-    data.table <- FALSE
-  }
-  if (data.table) {
-    message("Converting STSDF class to data.table class")
-    observationsDT <- data.table::data.table(obsdf, key = c("timeIndex"))
-    for (ind in 1:ntime) {
-      ppq <- observationsDT[list(ind)]
-      nspace1 <- dim(ppq)[1]
-      ff <- matrix(
-        unlist(lapply(ppq[[depvar]], FUN = function(x) {
-          diffsN1(x, ppq[[depvar]])
-        })),
-        byrow = TRUE,
-        ncol = nspace1
-      )
-      ff <- (ff^2) / 2
-      findx <- ppq[, vindex]
-      vmat[findx, findx] <- vmat[findx, findx] + ff
-      if (anyNA(ff)) {
-        stop("na-values in covariance matrix")
-      }
-      indmat[findx, findx] <- indmat[findx, findx] + 1
-      if (interactive() && debug.level) setTxtProgressBar(pb, ind)
+
+  for (ind in seq_len(ntime)) {
+    vals <- obs_mat[, ind]
+    findx <- which(!is.na(vals))
+    nspace1 <- length(findx)
+    if (nspace1 < 2) {
+      next
     }
-  } else {
-    for (ind in 1:ntime) {
-      ppq <- obsdf[obsdf$timeIndex == ind, ]
-      nspace1 <- dim(ppq)[1]
-      ff <- matrix(
-        unlist(lapply(ppq[, depvar], FUN = function(x) {
-          diffsN1(x, ppq[, depvar])
-        })),
-        byrow = TRUE,
-        ncol = nspace1
-      )
-      ff <- (ff^2) / 2
-      findx <- ppq$vindex
-      vmat[findx, findx] <- vmat[findx, findx] + ff
-      if (anyNA(ff)) {
-        stop("na-values in covariance matrix")
-      }
-      indmat[findx, findx] <- indmat[findx, findx] + 1
-      if (interactive() && debug.level) setTxtProgressBar(pb, ind)
-    }
-  }
-  if (interactive() && debug.level) {
-    close(pb)
+    vals <- vals[findx]
+    ff <- outer(vals, vals, FUN = function(x, y) (y - x)^2 / 2)
+    vmat[findx, findx] <- vmat[findx, findx] + ff
+    indmat[findx, findx] <- indmat[findx, findx] + 1
   }
   vmat <- vmat / indmat
-  obssp <- observations@sp
-  dmat <- sp::spDists(obssp, obssp)
+  dmat <- utop_dist_matrix(utop_centroid_coordinates(support))
 
   vario <- matrix(NA, ncol = 7, nrow = nspace * (nspace - 1) / 2)
   icount <- 0
@@ -365,8 +235,8 @@ rtopVariogram.STSDF <- function(
       c(
         dmat[istat, (istat + 1):nspace],
         vmat[istat, (istat + 1):nspace],
-        rep(obssp$area[istat], njs),
-        obssp$area[(istat + 1):nspace],
+        rep(support$area[istat], njs),
+        support$area[(istat + 1):nspace],
         rep(istat, njs),
         (istat + 1):nspace,
         indmat[istat, (istat + 1):nspace]
@@ -383,11 +253,15 @@ rtopVariogram.STSDF <- function(
     var3d <- vario
     class(var3d) <- c("rtopVariogramCloud", "data.frame")
   } else {
-    abins <- adfunc(NULL, obssp, amul)
-    dbins <- dfunc(NULL, obssp, dmul)
-    obssp$acl <- findInterval(obssp$area, abins)
-    vario$acl1 <- obssp$acl[vario$acl1]
-    vario$acl2 <- obssp$acl[vario$acl2]
+    if (missing(abins)) {
+      abins <- adfunc(NULL, support, amul)
+    }
+    if (missing(dbins)) {
+      dbins <- dfunc(NULL, support, dmul)
+    }
+    support$acl <- findInterval(support$area, abins)
+    vario$acl1 <- support$acl[vario$acl1]
+    vario$acl2 <- support$acl[vario$acl2]
 
     ich <- which(vario$acl1 > vario$acl2)
     acl1c <- vario$acl1

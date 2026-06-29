@@ -2,7 +2,6 @@
 discBinAreas <- function(object, object2, dist, resol, stype) {
   ad <- sqrt(object) / 2
   ad[2] <- sqrt(object2) / 2
-  Srl <- list()
   dAreas <- list()
   for (i in 1:2) {
     pt1 <- c(0, ifelse(i == 1, 0, dist))
@@ -10,9 +9,14 @@ discBinAreas <- function(object, object2, dist, resol, stype) {
     x2 <- pt1[1] + ad[i]
     y1 <- pt1[2] - ad[i]
     y2 <- pt1[2] + ad[i]
-    boun <- data.frame(x = c(x1, x2, x2, x1, x1), y = c(y1, y1, y2, y2, y1))
-    boun <- sp::Polygon(sp::SpatialPoints(boun))
-    dAreas[[i]] <- sp::spsample(boun, resol, stype, offset = c(0.5, 0.5))
+    boun <- cbind(x = c(x1, x2, x2, x1, x1), y = c(y1, y1, y2, y2, y1))
+    poly <- sf::st_sfc(sf::st_polygon(list(boun)))
+    dAreas[[i]] <- sf::st_sample(
+      poly,
+      size = resol,
+      type = stype,
+      offset = c(0.5, 0.5)
+    )
   }
   dAreas
 }
@@ -54,28 +58,38 @@ rtopDisc.rtop <- function(object, params = list(), ...) {
   observations <- object$observations
   if ("predictionLocations" %in% names(object)) {
     predictionLocations <- object$predictionLocations
-    bbo <- data.frame(t(sp::bbox(observations)))
-    bbp <- data.frame(t(sp::bbox(predictionLocations)))
-    bb <- rbind(bbo, bbp)
+    bbo <- utop_bbox(observations)
+    bbp <- utop_bbox(predictionLocations)
+    bb <- c(
+      xmin = min(bbo[[1]], bbp[[1]]),
+      ymin = min(bbo[[2]], bbp[[2]]),
+      xmax = max(bbo[[3]], bbp[[3]]),
+      ymax = max(bbo[[4]], bbp[[4]])
+    )
   } else {
-    bb <- sp::bbox(observations)
+    bb <- utop_bbox(observations)
   }
-  sp::coordinates(bb) <- as.formula(paste("~", names(bb)[1], "+", names(bb)[2]))
-  object$dObs <- rtopDisc(observations, sp::bbox(bb), params = object$params)
-  object@observations@data$ddim <- unlist(lapply(
-    object$dObs,
-    FUN = function(are) dim(sp::coordinates(are)[1])
-  ))
+  object$dObs <- rtopDisc(observations, bb = bb, params = object$params)
+  if (inherits(object$observations, "sf")) {
+    object$observations$ddim <- vapply(
+      object$dObs,
+      FUN = function(are) nrow(utop_point_coordinates(are)),
+      FUN.VALUE = numeric(1)
+    )
+  }
   if ("predictionLocations" %in% names(object)) {
     object$dPred <- rtopDisc(
       predictionLocations,
-      sp::bbox(bb),
+      bb = bb,
       params = object$params
     )
-    object@predictionLocations@data$ddim <- unlist(lapply(
-      object$dPred,
-      FUN = function(are) dim(sp::coordinates(are)[1])
-    ))
+    if (inherits(object$predictionLocations, "sf")) {
+      object$predictionLocations$ddim <- vapply(
+        object$dPred,
+        FUN = function(are) nrow(utop_point_coordinates(are)),
+        FUN.VALUE = numeric(1)
+      )
+    }
   }
   object
 }
@@ -204,113 +218,31 @@ rtopDisc.sf <- function(
 
 #' @export
 #' @rdname rtopDisc
-rtopDisc.SpatialPolygonsDataFrame <- function(
+rtopDisc.stars <- function(
   object,
   params = list(),
-  bb = sp::bbox(object),
+  bb = sf::st_bbox(utop_stars_support(object)),
   ...
 ) {
-  rtopDisc(as(object, "SpatialPolygons"), params = params, bb, ...)
+  rtopDisc(utop_stars_support(object), params = params, bb = bb, ...)
+}
+
+
+#' @export
+#' @noRd
+rtopDisc.SpatialPolygonsDataFrame <- function(object, ...) {
+  utop_stop_legacy_sp(object)
 }
 
 #' @export
-#' @rdname rtopDisc
-rtopDisc.SpatialPolygons <- function(
-  object,
-  params = list(),
-  bb = sp::bbox(object),
-  ...
-) {
-  params <- getRtopParams(params, ...)
-  stype <- params$rstype
-  resol <- params$rresol
-  debug.level <- params$debug.level
-  if (stype == "random" || stype == "regular") {
-    lapply(object@polygons, FUN = function(pol) {
-      sp::spsample(pol, resol, stype, offset = c(0.5, 0.5))
-    })
-  } else if (stype == "rtop") {
-    bbdia <- sqrt(bbArea(bb))
-    small <- bbdia / 100
-    ires0 <- 1
-    nps <- length(object@polygons)
-    spp <- vector("list", nps)
-
-    lfun <- function(pol, resol, ires0, bbdia, small) {
-      lpoly <- sp::SpatialPolygons(list(pol))
-      ba <- sp::bbox(lpoly)
-      ipts <- resol - 1
-      ires <- ires0
-      while (ipts < resol) {
-        ires <- ires * 2
-        xd <- bbdia / (ires)
-        if (bbArea(ba) / (xd * xd) > (resol - 2)) {
-          x <- seq(bb[[1]] - small, bb[[3]] + small, xd)
-          y <- seq(bb[[2]] - small, bb[[4]] + small, xd)
-          x <- x[x > ba[[1]] & x < ba[[3]]]
-          y <- y[y > ba[[2]] & y < ba[[4]]]
-          pts <- expand.grid(x = x, y = y)
-          if (dim(pts)[1] >= 1) {
-            sp::coordinates(pts) <- ~ x + y
-            pts <- pts[!is.na(sp::over(pts, lpoly)), ]
-            ipts <- dim(sp::coordinates(pts))[1]
-          }
-        }
-      }
-      pts
-    }
-
-    if (
-      !is.null(params$nclus) &&
-        params$nclus > 1 &&
-        length(object@polygons) * params$rresol / 100 > params$cnAreas
-    ) {
-      if (!suppressMessages(suppressWarnings(requireNamespace("parallel")))) {
-        stop("nclus is > 1, but package parallel is not available")
-      }
-      nclus <- params$nclus
-
-      cl <- rtopCluster(nclus, type = params$clusType, outfile = params$outfile)
-      #      cl = rtopCluster(nclus, {require(rtop); bbArea = rtop:::bbArea}, type = params$clusType)
-
-      spp <- parallel::clusterApply(cl, object@polygons, fun = function(x) {
-        lfun(x, resol, ires0, bbdia, small)
-      })
-    } else {
-      if (interactive() && debug.level <= 1) {
-        pb <- txtProgressBar(1, nps, style = 3)
-      }
-      print(paste("Sampling points from ", nps, "areas"))
-      for (ip in 1:nps) {
-        spp[[ip]] <- lfun(object@polygons[[ip]], resol, ires0, bbdia, small)
-        ipts <- dim(sp::coordinates(spp[[ip]]))[1]
-        if (debug.level > 1) {
-          print(paste(
-            "Sampling from area number",
-            ip,
-            "containing",
-            ipts,
-            "points"
-          ))
-        } else if (interactive()) {
-          setTxtProgressBar(pb, ip)
-        }
-      }
-      if (interactive() && debug.level <= 1) {
-        close(pb)
-      }
-      if (debug.level >= 0) {
-        print(paste(
-          "Sampled on average",
-          round(mean(unlist(lapply(spp, length))), 2),
-          "points from",
-          nps,
-          "areas"
-        ))
-      }
-    }
-    spp
-  } else {
-    stop(paste("Unknown sampling type:", stype))
-  }
+#' @noRd
+rtopDisc.SpatialPolygons <- function(object, ...) {
+  utop_stop_legacy_sp(object)
 }
+
+#' @export
+#' @noRd
+rtopDisc.STSDF <- function(object, ...) {
+  utop_stop_legacy_sp(object, target = "stars")
+}
+

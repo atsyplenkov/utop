@@ -22,54 +22,29 @@ hasUkTrend <- function(formulaString) {
 
 #' @noRd
 ukNLoc <- function(locations) {
-  if (inherits(locations, "sf") || inherits(locations, "sfc")) {
-    length(sf::st_geometry(locations))
-  } else if (inherits(locations, "Spatial")) {
-    if ("data" %in% methods::slotNames(class(locations))) {
-      dim(locations@data)[1]
-    } else {
-      length(locations)
-    }
+  if (inherits(locations, "stars")) {
+    utop_stars_nspace(locations)
   } else {
-    dim(locations)[1]
+    nrow(utop_as_sf(locations))
   }
 }
 
+#' @noRd
 #' @noRd
 ukLocData <- function(locations) {
-  if (inherits(locations, "sf")) {
-    sf::st_drop_geometry(locations)
-  } else if (
-    inherits(locations, "Spatial") &&
-      "data" %in% methods::slotNames(class(locations))
-  ) {
-    locations@data
-  } else {
-    data.frame(row.names = seq_len(ukNLoc(locations)))
-  }
+  sf::st_drop_geometry(utop_as_sf(locations))
 }
 
+#' @noRd
 #' @noRd
 ukCentroids <- function(locations) {
-  if (inherits(locations, "sf") || inherits(locations, "sfc")) {
-    suppressWarnings(sf::st_coordinates(sf::st_centroid(sf::st_geometry(
-      locations
-    ))))
-  } else {
-    sp::coordinates(locations)
-  }
+  utop_centroid_coordinates(locations)
 }
 
 #' @noRd
+#' @noRd
 ukDiscCoordinates <- function(discPoints) {
-  if (inherits(discPoints, "Spatial")) {
-    sp::coordinates(discPoints)
-  } else {
-    sf::st_coordinates(sf::st_geometry(sf::st_as_sf(discPoints)))[,
-      1:2,
-      drop = FALSE
-    ]
-  }
+  utop_point_coordinates(discPoints)
 }
 
 #' @noRd
@@ -141,10 +116,14 @@ ukTrendMatrix <- function(
     # them over the discretisation points. Pure attribute terms are constant
     # within an area and are handled by the centroid branch below.
     if (is.null(discPoints)) {
-      if (
-        !(inherits(locations, "SpatialPolygons") ||
-          (inherits(locations, "sf") && all(sf::st_dimension(locations) == 2)))
-      ) {
+      if (!inherits(locations, "sf") && !inherits(locations, "stars")) {
+        stop(paste(
+          "ukTrendSupport = \"block\" with coordinate-based trend terms",
+          "requires polygon supports or precomputed discretisation points"
+        ))
+      }
+      loc_sf <- utop_as_sf(locations)
+      if (!all(sf::st_dimension(loc_sf) == 2)) {
         stop(paste(
           "ukTrendSupport = \"block\" with coordinate-based trend terms",
           "requires polygon supports or precomputed discretisation points"

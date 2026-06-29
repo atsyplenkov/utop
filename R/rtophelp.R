@@ -7,13 +7,7 @@ summary.rtop <- function(object, ...) {
 #' @noRd
 adfunc <- function(sampleVariogram, observations, amul) {
   if (is.null(sampleVariogram)) {
-    if ("area" %in% names(observations)) {
-      area <- observations$area
-    } else {
-      area <- unlist(lapply(observations@polygons, FUN = function(poly) {
-        poly@area
-      }))
-    }
+    area <- utop_area(observations)
     # alternative is variogram
   } else {
     area <- c(sampleVariogram$a1, sampleVariogram$a2)
@@ -45,8 +39,8 @@ adfunc <- function(sampleVariogram, observations, amul) {
 #' @noRd
 dfunc <- function(sampleVariogram, observations, dmul) {
   if (is.null(sampleVariogram)) {
-    dmax <- sqrt(bbArea(sp::bbox(observations))) / 2
-    dmin <- min(dist(sp::coordinates(observations)))
+    dmax <- sqrt(bbArea(utop_bbox(observations))) / 2
+    dmin <- min(stats::dist(utop_centroid_coordinates(observations)))
   } else if (is(sampleVariogram, "rtopVariogramCloud")) {
     dmax <- max(sampleVariogram$dist)
     dmin <- min(sampleVariogram$dist)

@@ -2,8 +2,7 @@
 # Is it reasonable to have ainfo <<- read.area.info(finfo,...) to make sure that ainfo
 # is also available at the top level after being delivered to function read.areas?
 
-#' create SpatialPointsDataFrame with observations of data with a spatial
-#' support
+#' create data.frame with observations of data with a spatial support
 #'
 #' readAreaInfo will read a text file with observations and descriptions of
 #' data with a spatial support.
@@ -24,8 +23,8 @@
 #' @param sep separator in csv-file
 #' @param debug.level used for giving additional output
 #' @param moreCols name of other column names the user wants included in ainfo
-#' @return \code{\link[sp:SpatialPoints]{SpatialPointDataFrame}} with
-#' information about observations and/or predictionLocations.
+#' @return \code{data.frame} with information about observations and/or
+#' predictionLocations.
 #' @author Jon Olav Skoien
 #' @keywords spatial
 #' @export
@@ -56,7 +55,7 @@ readAreaInfo <- function(
   }
   ainfot <- read.csv(fname, header = TRUE, sep = sep)
   if (debug.level > 1) {
-    print(sp::summary(ainfot))
+    print(summary(ainfot))
   }
   ainfo <- data.frame(
     id = ainfot[, names(ainfot) == id],
@@ -89,15 +88,15 @@ readAreaInfo <- function(
 }
 
 
-#' help file for creating SpatialPolygonsDataFrame with observations and/or
+#' help file for creating \code{sf} objects with observations and/or
 #' predictionLocations of data with a spatial support
 #'
 #' readAreas will read area-files, add observations and convert the result to
-#' \cr \code{\link[sp]{SpatialPolygonsDataFrame}}
+#' \code{\link[sf]{sf}}.
 #'
 #' If \code{object} is a file name, \code{\link{readAreaInfo}} will be called.
-#' If it is a \cr \code{\link[sp:SpatialPoints]{SpatialPointsDataFrame}} with
-#' observations and/or predictionLocations, the function will read areal data
+#' If it is a data frame with observations and/or predictionLocations, the
+#' function will read areal data from files according to the ID associated with
 #' from files according to the ID associated with each
 #' observation/predictionLocation.
 #'
@@ -107,15 +106,15 @@ readAreaInfo <- function(
 #' simplest way to read the data in that case is through
 #' \code{\link[sf]{st_read}}. See also \code{\link{utop-package}}.
 #'
-#' @param object either name of file with areal information or
-#' \code{\link[sp]{SpatialPointsDataFrame}} with observations
+#' @param object either name of file with areal information or data frame with
+#' observations
 #' @param adir directory where the files with areal information are to be found
 #' @param ftype type of file, the only type supported currently is "xy",
 #' referring to x- and y-coordinates of boundaries
 #' @param projection add projection to the object if input is boundary-files
 #' @param ... further parameters to be passed to \code{\link{readAreaInfo}}
-#' @return The function creates a
-#' \code{\link[sp:SpatialPolygons]{SpatialPolygonsDataFrame}} of observations
+#' @return The function creates an \code{sf} object of observations and/or
+#' predictionLocations, depending on the information given in \code{object}.
 #' and/or predictionLocations, depending on the information given in
 #' \code{object}.
 #' @author Jon Olav Skoien
@@ -128,7 +127,7 @@ readAreas <- function(object, adir = ".", ftype = "xy", projection = NA, ...) {
   # need option to use other separators as well
   # Output of this function is a list consisting of
   #      1 Updated version of ainfo
-  #      2 A list of Spatial polygons defining the borders of the areas or a set of Spatial grids
+  #      2 An sf object with polygons defining the borders of the areas
   if (is.character(object)) {
     cat(paste("calling readAreaInfo with filename ", object, "\n"))
     ainfo <- readAreaInfo(object, ...)
@@ -142,52 +141,31 @@ readAreas <- function(object, adir = ".", ftype = "xy", projection = NA, ...) {
   } else {
     fnames <- ainfo$id
   }
-  areas <- list()
   row.names(ainfo) <- c(1:dim(ainfo)[1])
   if (ftype == "xy") {
     fnames <- paste(adir, "/", fnames, ".xy", sep = "")
-    Srl <- list()
+    geometries <- vector("list", length(fnames))
     for (i in seq_along(fnames)) {
       cat(paste("reading first polygon", i, length(fnames), "\n"))
       boun <- read.table(fnames[i], header = FALSE)
       names(boun) <- c("x", "y")
-      sp::coordinates(boun) <- ~ x + y
-      boun <- sp::Polygon(boun)
-      cat(paste("adding data to ainfo", i, boun@area, boun@labpt[1], "\n"))
+      coords <- as.matrix(boun[, c("x", "y")])
+      if (!all(coords[1, ] == coords[nrow(coords), ])) {
+        coords <- rbind(coords, coords[1, ])
+      }
+      geometries[[i]] <- sf::st_polygon(list(coords))
       cat(paste(" Finished polygon\n"))
-      Srl[[i]] <- sp::Polygons(list(boun), ID = as.character(i))
     }
-    Sr <- sp::SpatialPolygons(
-      Srl,
-      proj4string = sp::CRS(as.character(projection))
-    )
-    #  } else if (ftype == "shp") {
-    # This part is when each file has a single shape
-    # NOT PROPERLY IMPLEMENTED - need testing with real shapes
-    # The files will probably be read as lists of polygons, necessary
-    # to extract the actual polygon
-    #    require(maptools)
-    #    fnames = paste(adir,"/",fnames,".shp",sep="")
-    #    Srl = list()
-    #    for (i in 1:dim(fnames)) {
-    #      boun = readShapePoly(fnames[i])
-    #      Srl[[i]] = sp::Polygons(boun,ID = as.character(i))
-    #    }
-    #    Sr = sp::SpatialPolygons(Srl, proj4string=sp::CRS(as.character(projection)))
-    #  } else if (ftype == "shps") {
-    #This clause is when one shapefile includes all the shapes
-    # NOT properly tested yet
-    # Necessary to split all shapes into single Polygons
-    #    require(maptools)
-    #    Sr = readShapePoly(adir)
-    #    SPDF = sp::SpatialPolygonsDataFrame(Sr,data = ainfo)
+    crs <- if (is.na(projection)) NA else as.character(projection)
+    geom <- sf::st_sfc(geometries, crs = crs)
   } else {
     stop(paste("Filetype", ftype, "not recognized"))
   }
-  ainfo$area <- unlist(lapply(Sr@polygons, FUN = function(poly) poly@area))
-  ainfo$labx <- unlist(lapply(Sr@polygons, FUN = function(poly) poly@labpt[1]))
-  ainfo$laby <- unlist(lapply(Sr@polygons, FUN = function(poly) poly@labpt[2]))
-  ainfo$bdim <- unlist(lapply(Sr@polygons, FUN = function(poly) dim(poly)[1]))
-  SPDF <- sp::SpatialPolygonsDataFrame(Sr, data = ainfo, match.ID = TRUE)
-  SPDF
+  sfobj <- sf::st_sf(ainfo, geometry = geom)
+  sfobj$area <- as.numeric(sf::st_area(sfobj))
+  cent <- suppressWarnings(sf::st_coordinates(sf::st_centroid(sfobj)))
+  sfobj$labx <- cent[, 1]
+  sfobj$laby <- cent[, 2]
+  sfobj$bdim <- vapply(geometries, function(poly) nrow(poly[[1]]), numeric(1))
+  sfobj
 }

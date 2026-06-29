@@ -12,6 +12,12 @@ rtopSim.rtop <- function(
   ...
 ) {
   params <- getRtopParams(object$params, newPar = params, ...)
+  if (
+    inherits(object$observations, "stars") ||
+      inherits(object$predictionLocations, "stars")
+  ) {
+    stop("rtopSim does not support stars spatiotemporal objects yet")
+  }
   nmax <- params$nmax
   cv <- params$cv
   maxdist <- params$maxdist
@@ -62,36 +68,10 @@ rtopSim.rtop <- function(
   varMatPredObs <- object$varMatPredObs
   varMatObs <- object$varMatObs
   varMatPred <- object$varMatPred
-  predictions <- object$predictionLocations
-  observations <- object$observations
-  nobs <- length(observations)
-  predictionLocations <- object$predictionLocations
-  predictions <- predictionLocations
-  if (inherits(predictions, "Spatial")) {
-    if (!is(predictions, "SpatialPolygonsDataFrame")) {
-      aPred <- sapply(slot(predictions, "polygons"), function(i) {
-        slot(i, "area")
-      })
-      predictions <- sp::SpatialPolygonsDataFrame(
-        predictions,
-        data = data.frame(area = aPred)
-      )
-    } else if (!"area" %in% names(predictions)) {
-      predictions$area <- sapply(slot(predictions, "polygons"), function(i) {
-        slot(i, "area")
-      })
-    }
-  } else if (inherits(predictions, "sf")) {
-    if (!("area" %in% names(predictions))) {
-      predictions$area <- units::set_units(sf::st_area(predictions), NULL)
-    }
-  } else if (inherits(predictions, "sfc_POLYGON")) {
-    predictions <- sf::st_sf(
-      predictions,
-      area = units::set_units(sf::st_area(predictions)),
-      NULL
-    )
-  }
+  predictions <- utop_add_area(object$predictionLocations)
+  observations <- utop_add_area(object$observations)
+  nobs <- nrow(observations)
+  predictionLocations <- predictions
 
   if (replace && !("replaceNumber" %in% names(predictionLocations))) {
     stop(
@@ -117,13 +97,7 @@ rtopSim.rtop <- function(
     if (length(dim(observations)) > 0 && dim(observations)[1] > 0) {
       obsall <- data.frame(observations)
       obs <- obsall[, as.character(object$formulaString[[2]])]
-      if (inherits(observations, "Spatial")) {
-        obscors <- sp::coordinates(observations)
-      } else {
-        obscors <- suppressWarnings(sf::st_coordinates(sf::st_centroid(
-          observations
-        )))
-      }
+      obscors <- utop_centroid_coordinates(observations)
       #      if (params$unc && "unc" %in% names(observations)) {
       #        unc0 = observations$unc
       #      } else unc0 = array(0,nobs)
@@ -173,28 +147,15 @@ rtopSim.rtop <- function(
       if (interactive() && debug.level) {
         setTxtProgressBar(pb, ip)
       }
-      if (inherits(predictionLocations, "Spatial")) {
-        newcor <- sp::coordinates(predictionLocations[inew, ])
-      } else {
-        newcor <- suppressWarnings(sf::st_coordinates(sf::st_centroid(predictionLocations[
-          inew,
-        ])))
-      }
+      newcor <- utop_centroid_coordinates(predictionLocations[inew, ])
       if (nobs == 0) {
         if (is.na(beta)) {
           stop("No observations found, beta (expected mean) has to be given")
         }
-        if (inherits(predictionLocations, "Spatial")) {
-          c0 <- varioEx(
-            sqrt(bbArea(sp::bbox(predictionLocations[in2, ]))),
-            variogramModel
-          )
-        } else {
-          c0 <- varioEx(
-            sqrt(bbArea(sf::st_bbox(predictionLocations[in2, ]))),
-            variogramModel
-          )
-        }
+        c0 <- varioEx(
+          sqrt(bbArea(utop_bbox(predictionLocations[in2, ]))),
+          variogramModel
+        )
         inewvar <- varMatPred[inew, inew]
         obs <- rnorm(1, beta, c0 - inewvar)
         vObs <- matrix(inewvar, nrow = 1, ncol = 1)

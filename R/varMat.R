@@ -10,14 +10,20 @@ varMat.rtop <- function(
   ...
 ) {
   params <- getRtopParams(object$params, newPar = params, ...)
-  observations <- object$observations
-  if (is(observations, "STSDF")) {
-    observations <- observations@sp
+  observations <- if (inherits(object$observations, "stars")) {
+    utop_stars_support(object$observations)
+  } else {
+    utop_as_sf(object$observations)
   }
-  nObs <- dim(observations)[1]
-  predictionLocations <- object$predictionLocations
-  if (is(predictionLocations, "STSDF")) {
-    predictionLocations <- predictionLocations@sp
+  nObs <- nrow(observations)
+  predictionLocations <- if ("predictionLocations" %in% names(object)) {
+    if (inherits(object$predictionLocations, "stars")) {
+      utop_stars_support(object$predictionLocations)
+    } else {
+      utop_as_sf(object$predictionLocations)
+    }
+  } else {
+    NULL
   }
   variogramModel <- object$variogramModel
   lgDistPred <- params$gDistPred
@@ -28,29 +34,22 @@ varMat.rtop <- function(
   } else {
     debug.level <- params$debug.level
   }
-  if (inherits(observations, "Spatial")) {
-    aObs <- sapply(slot(observations, "polygons"), function(i) slot(i, "area"))
-  } else if (inherits(observations, "sf")) {
-    aObs <- units::set_units(sf::st_area(observations), NULL)
-  } else {
-    stop(paste(
-      "varMat: not able to find area from object of type:",
-      paste(class(observations), collapse = " ")
-    ))
-  }
+  aObs <- utop_area(observations)
   obsComp <- FALSE
   predComp <- FALSE
   if ("varMatObs" %in% names(object) && !varMatUpdate) {
     if (
       !identical(attr(object$varMatObs, "variogramModel"), variogramModel) ||
         !nObs == dim(object$varMatObs)[1] ||
-        ("varMatPredObs" %in%
-          names(object) &&
-          (dim(object$varMatPredObs)[2] != dim(predictionLocations)[1] ||
-            !identical(
-              attr(object$varMatObs, "variogramModel"),
-              variogramModel
-            )))
+        ("varMatPredObs" %in% names(object) &&
+          (
+            (!is.null(predictionLocations) &&
+              dim(object$varMatPredObs)[2] != dim(predictionLocations)[1]) ||
+              !identical(
+                attr(object$varMatObs, "variogramModel"),
+                variogramModel
+              )
+          ))
     ) {
       varMatUpdate <- TRUE
     }
@@ -120,7 +119,7 @@ varMat.rtop <- function(
       }
       object$varMatObs <- varMat(
         dObs,
-        coor1 = sp::coordinates(observations),
+        coor1 = utop_centroid_coordinates(observations),
         variogramModel = variogramModel,
         debug.level = debug.level,
         newPar = params
@@ -134,7 +133,6 @@ varMat.rtop <- function(
       "predictionLocations" %in% names(object) &&
       (!"varMatPredObs" %in% names(object) | varMatUpdate)
   ) {
-    #    ftype = ifelse(inherits(predictionLocations,"SpatialPolygons"),"polygons","lines")
     varMatObs <- object$varMatObs
     vDiagObs <- diag(varMatObs)
     if (!is.null(dim(predictionLocations))) {
@@ -240,7 +238,7 @@ varMat.rtop <- function(
       # Do full integration over variograms
       object$varMatPred <- varMat(
         dPred,
-        coor1 = sp::coordinates(predictionLocations),
+        coor1 = utop_centroid_coordinates(predictionLocations),
         diag = TRUE,
         variogramModel = variogramModel,
         debug.level = debug.level,
@@ -249,8 +247,8 @@ varMat.rtop <- function(
       object$varMatPredObs <- varMat(
         dObs,
         dPred,
-        coor1 = sp::coordinates(observations),
-        coor2 = sp::coordinates(predictionLocations),
+        coor1 = utop_centroid_coordinates(observations),
+        coor2 = utop_centroid_coordinates(predictionLocations),
         variogramModel = variogramModel,
         sub1 = diag(object$varMatObs),
         sub2 = object$varMatPred,
@@ -294,13 +292,7 @@ varMat.rtop <- function(
           params = params
         )
       }
-      if (inherits(predictionLocations, "Spatial")) {
-        aPred <- sapply(slot(predictionLocations, "polygons"), function(i) {
-          slot(i, "area")
-        })
-      } else {
-        aPred <- units::set_units(sf::st_area(predictionLocations), NULL)
-      }
+      aPred <- utop_area(predictionLocations)
       fPredObs <- matrix(rep(aObs, nPred), ncol = nPred)
       sPredObs <- t(matrix(rep(aPred, nObs), ncol = nObs))
       nuggPredObs <- matrix(
@@ -363,32 +355,33 @@ varMat.matrix <- function(
 
 #' @export
 #' @rdname varMat
-varMat.SpatialPolygonsDataFrame <- function(object, object2 = NULL, ...) {
-  if (is(object2, "SpatialPolygonsDataFrame")) {
-    object2 <- as(object2, "SpatialPolygons")
-  }
-  varMat(as(object, "SpatialPolygons"), object2, ...)
+varMat.sf <- function(object, object2 = NULL, ...) {
+  varMatDefault(object, object2, ...)
 }
 
 
 #' @export
 #' @rdname varMat
-varMat.SpatialPolygons <- function(
-  object,
-  object2 = NULL,
-  variogramModel,
-  overlapObs,
-  overlapPredObs,
-  ...
-) {
-  varMatDefault(
-    object,
-    object2,
-    variogramModel,
-    overlapObs,
-    overlapPredObs,
-    ...
-  )
+varMat.stars <- function(object, object2 = NULL, ...) {
+  object <- utop_stars_support(object)
+  if (!is.null(object2)) {
+    object2 <- utop_as_sf(object2)
+  }
+  varMatDefault(object, object2, ...)
+}
+
+
+#' @export
+#' @noRd
+varMat.SpatialPolygonsDataFrame <- function(object, ...) {
+  utop_stop_legacy_sp(object)
+}
+
+
+#' @export
+#' @noRd
+varMat.SpatialPolygons <- function(object, ...) {
+  utop_stop_legacy_sp(object)
 }
 
 
@@ -425,7 +418,29 @@ varMatDefault <- function(
     )
   }
 
+  if (params$nugget) {
+    if (missing(overlapObs)) {
+      overlapObs <- findOverlap(object1, object1, params = params)
+    }
+
+    aObs <- utop_area(object1)
+    nObs <- length(aObs)
+    fObs <- matrix(rep(aObs, nObs), ncol = nObs)
+    sObs <- t(fObs)
+    nuggObs <- matrix(
+      mapply(
+        FUN = nuggEx,
+        (1 / fObs + 1 / sObs - 2 * overlapObs / (fObs * sObs)) / 2,
+        MoreArgs = list(variogramModel = variogramModel)
+      ),
+      ncol = nObs
+    )
+    diag(nuggObs) <- 0
+    varMatObs <- varMatObs + nuggObs
+  }
+
   if (is.null(object2)) {
+    attr(varMatObs, "variogramModel") <- variogramModel
     return(varMatObs)
   }
 
@@ -466,42 +481,27 @@ varMatDefault <- function(
     )
   }
   if (params$nugget) {
-    if (missing(overlapObs)) {
-      overlapObs <- findOverlap(object1, object1, params = params)
-    }
     if (missing(overlapPredObs)) {
       overlapPredObs <- findOverlap(object1, object2, params = params)
     }
 
-    aObs <- sapply(slot(object1, "polygons"), function(i) slot(i, "area"))
-    aPred <- sapply(slot(object2, "polygons"), function(i) slot(i, "area"))
-
+    aPred <- utop_area(object2)
     nObs <- length(aObs)
     nPred <- length(aPred)
-
-    fObs <- matrix(rep(aObs, nObs), ncol = nObs)
-    sObs <- t(fObs)
-    fPredObs <- matrix(rep(aPred, nPred), ncol = nPred)
+    fPredObs <- matrix(rep(aObs, nPred), ncol = nPred)
     sPredObs <- t(matrix(rep(aPred, nObs), ncol = nObs))
-    nuggObs <- matrix(
-      mapply(
-        FUN = nuggEx,
-        (1 / fObs + 1 / sObs - 2 * overlapObs / (fObs * sObs)) / 2,
-        MoreArgs = list(variogramModel = variogramModel)
-      ),
-      ncol = nObs
-    )
     nuggPredObs <- matrix(
       mapply(
         FUN = nuggEx,
-        # fmt:skip
-        (1 / fPredObs + 1 / sPredObs - 2 * overlapPredObs / (fPredObs * sPredObs)) / 2,
+        (
+          1 / fPredObs + 1 / sPredObs -
+            2 * overlapPredObs / (fPredObs * sPredObs)
+        ) / 2,
         MoreArgs = list(variogramModel = variogramModel)
       ),
       ncol = nPred
     )
-    object$varMatObs <- object$varMatObs - nuggObs
-    object$varMatPredObs <- object$varMatPredObs - nuggPredObs
+    varMatPredObs <- varMatPredObs + nuggPredObs
   }
   attr(varMatObs, "variogramModel") <- variogramModel
   attr(varMatPredObs, "variogramModel") <- variogramModel
@@ -561,7 +561,6 @@ varMat.list <- function(
       length(d1) + length(d2) > params$cnAreas &&
       requireNamespace("parallel")
   ) {
-    #    cl = rtopCluster(params$nclus, {require(sp); vred = rtop:::vred}, type = params$clusType)
     cl <- rtopCluster(
       params$nclus,
       type = params$clusType,
@@ -586,18 +585,14 @@ varMat.list <- function(
         mdim <- length(d2)
       }
       a1 <- d1[[ia]]
-      if (inherits(a1, "Spatial")) {
-        a1 <- sp::coordinates(a1)
-      } else if (inherits(a1, "sf")) {
-        a1 <- sf::st_coordinates(a1)
-      }
+      a1 <- utop_point_coordinates(a1)
 
       ip1 <- dim(a1)[1]
       first <- ifelse(equal, ia, 1)
       lorder <- c(first:mdim)
       if (!is.null(coor1) && !is.null(coor2) && maxdist < Inf) {
         lorder <- lorder[
-          sp::spDistsN1(coor2[first:mdim, ], coor1[ia, ]) < maxdist
+          utop_dists_n1(coor2[first:mdim, ], coor1[ia, ]) < maxdist
         ]
       }
       if (length(lorder) > 0) {
@@ -606,11 +601,7 @@ varMat.list <- function(
         } else {
           a2 <- d2[lorder]
         }
-        if (inherits(a2, "Spatial")) {
-          a2 <- sp::coordinates(a2)
-        } else if (inherits(a2, "sf")) {
-          a2 <- sf::st_coordinates(a2)
-        }
+
 
         lmat <- mapply(
           vred,
@@ -642,7 +633,10 @@ varMat.list <- function(
     }
     parallel::clusterExport(
       cl,
-      c("d1", "d2", "coor1", "coor2", "equal", "maxdist", "fun", "debug.level"),
+      c(
+        "d1", "d2", "coor1", "coor2", "equal", "maxdist", "fun",
+        "debug.level", "utop_point_coordinates", "utop_dists_n1", "vred"
+      ),
       envir = environment()
     )
     vmll <- parallel::clusterApplyLB(
@@ -673,17 +667,13 @@ varMat.list <- function(
     for (ia in 1:ndim) {
       t1 <- proc.time()[[3]]
       a1 <- d1[[ia]]
-      if (inherits(a1, "Spatial")) {
-        a1 <- sp::coordinates(a1)
-      } else if (inherits(a1, "sf")) {
-        a1 <- sf::st_coordinates(a1)
-      }
+      a1 <- utop_point_coordinates(a1)
       ip1 <- dim(a1)[1]
       first <- ifelse(equal, ia, 1)
       lorder <- c(first:mdim)
       if (!missing(coor1) && !missing(coor2) && maxdist < Inf) {
         lorder <- lorder[
-          sp::spDistsN1(coor2[first:mdim, ], coor1[ia, ]) < maxdist
+          utop_dists_n1(coor2[first:mdim, ], coor1[ia, ]) < maxdist
         ]
       }
       if (length(lorder) > 0) {
@@ -743,28 +733,13 @@ varMat.list <- function(
 
 
 #' @export
-#' @rdname varMat
-varMat.STS <- function(
-  object,
-  object2 = NULL,
-  variogramModel,
-  overlapObs,
-  overlapPredObs,
-  ...
-) {
-  if (is(object2, "STS")) {
-    object2 <- object2@sp
-  }
-  object <- object@sp
-  if (
-    !is(object, "SpatialPolygons") ||
-      (!is.null(object2) && !inherits(object2, "SpatialPolygons"))
-  ) {
-    stop(paste(
-      "Cannot create covariance matrix from objects of class",
-      class(object),
-      class(object2)
-    ))
-  }
-  varMat(object, object2, variogramModel, overlapObs, overlapPredObs, ...)
+#' @noRd
+varMat.STSDF <- function(object, ...) {
+  utop_stop_legacy_sp(object, target = "stars")
+}
+
+#' @export
+#' @noRd
+varMat.STS <- function(object, ...) {
+  utop_stop_legacy_sp(object, target = "stars")
 }

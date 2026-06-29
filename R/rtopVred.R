@@ -24,17 +24,14 @@ vred <- function(
     } else if (is.null(a2)) {
       a2 <- a1
     }
-    if (inherits(a1, "Spatial")) {
-      a1 <- sp::coordinates(a1)
-    }
-    if (inherits(a2, "Spatial")) {
-      a2 <- sp::coordinates(a2)
+    if (utop_is_legacy_sp(a1) || utop_is_legacy_sp(a2)) {
+      utop_stop_legacy_sp(if (utop_is_legacy_sp(a1)) a1 else a2)
     }
     if (inherits(a1, "sf") || inherits(a1, "sfc")) {
-      a1 <- sf::st_coordinates(a1)
+      a1 <- utop_point_coordinates(a1)
     }
     if (inherits(a2, "sf") || inherits(a2, "sfc")) {
-      a2 <- sf::st_coordinates(a2)
+      a2 <- utop_point_coordinates(a2)
     }
     ip1 <- dim(a1)[1]
     ip2 <- dim(a2)[1]

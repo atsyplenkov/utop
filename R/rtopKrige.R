@@ -43,29 +43,9 @@ rtopKrige.rtop <- function(object, varMatUpdate = FALSE, params = list(), ...) {
 
 
 #' @export
-#' @rdname rtopKrige
-rtopKrige.SpatialPolygonsDataFrame <- function(
-  object,
-  predictionLocations = NULL,
-  varMatObs,
-  varMatPredObs,
-  varMat,
-  params = list(),
-  formulaString,
-  sel,
-  ...
-) {
-  rtopKrige.default(
-    object,
-    predictionLocations,
-    varMatObs,
-    varMatPredObs,
-    varMat,
-    params,
-    formulaString,
-    sel,
-    ...
-  )
+#' @noRd
+rtopKrige.SpatialPolygonsDataFrame <- function(object, ...) {
+  utop_stop_legacy_sp(object)
 }
 
 
@@ -131,22 +111,11 @@ rtopKrige.default <- function(
   observations <- object
   obs0 <- observations[[depVar]]
   nobs <- dim(object)[1]
-  if (inherits(observations, "sf")) {
-    obscors <- sf::st_coordinates(observations)
-    if (cv) {
-      newcors <- obscors
-    } else {
-      newcors <- suppressWarnings(sf::st_coordinates(sf::st_centroid(
-        predictionLocations
-      )))
-    }
+  obscors <- utop_centroid_coordinates(observations)
+  if (cv) {
+    newcors <- obscors
   } else {
-    obscors <- sp::coordinates(observations)
-    if (cv) {
-      newcors <- obscors
-    } else {
-      newcors <- sp::coordinates(predictionLocations)
-    }
+    newcors <- utop_centroid_coordinates(predictionLocations)
   }
 
   npred <- ifelse(cv, nobs, ifelse(!missing(sel), length(sel), dim(newcors)[1]))
@@ -187,11 +156,7 @@ rtopKrige.default <- function(
     ))
   }
   #
-  if (inherits(observations, "Spatial")) {
-    mdist <- sqrt(bbArea(sp::bbox(observations)))
-  } else {
-    mdist <- sqrt(bbArea(sf::st_bbox(observations)))
-  }
+  mdist <- sqrt(bbArea(utop_bbox(observations)))
   if (nobs < nmax && mdist < maxdist && !cv) {
     varMat <- rbind(varMatObs, t(trendObs))
     varMat <- cbind(varMat, rbind(trendObs, matrix(0, ptrend, ptrend)))
@@ -284,10 +249,8 @@ rtopKrige.default <- function(
           " prediction locations"
         ))
       }
-      if (
-        debug.level > 1 && is(predictionLocations, "SpatialPolygonsDataFrame")
-      ) {
-        print(predictionLocations@data[inew, ])
+      if (debug.level > 1) {
+        print(data.frame(predictionLocations)[inew, ])
       }
     }
     newcor <- newcors[inew, ]
@@ -330,8 +293,8 @@ rtopKrige.default <- function(
     unc <- ret$unc
     c0arr <- ret$c0arr
     if (debug.level > 1) {
-      distm <- sp::spDistsN1(obscors, newcor)[neigh]
-      lobs <- observations@data[neigh, ]
+      distm <- utop_dists_n1(obscors, newcor)[neigh]
+      lobs <- data.frame(observations)[neigh, ]
       lobs <- rbind(lobs, mu = rep(0, (dim(lobs)[2])))
       lobs <- cbind(
         lobs,
@@ -396,20 +359,7 @@ rtopKrige.default <- function(
   if (interactive() && debug.level == 1 && length(sel) > 1) {
     close(pb)
   }
-  if (inherits(predictionLocations, "SpatialPolygons")) {
-    if ("data" %in% names(getSlots(class(predictionLocations)))) {
-      predictionLocations@data <- cbind(predictionLocations@data, predictions)
-      predictions <- predictionLocations
-    } else {
-      predictions <- sp::addAttrToGeom(
-        predictionLocations,
-        predictions,
-        match.ID = FALSE
-      )
-    }
-  } else {
-    predictions <- cbind(predictionLocations, predictions)
-  }
+  predictions <- cbind(predictionLocations, predictions)
   if (cv) {
     predictions$observed <- observations[[depVar]]
   }

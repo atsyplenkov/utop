@@ -8,11 +8,11 @@
 #' package
 #'
 #'
-#' @param observations \code{\link[sp]{SpatialPolygonsDataFrame}} or
-#' \code{\link[sf]{sf}}-polygons with observations
-#' @param predictionLocations a \code{\link[sp]{SpatialPolygons}},
-#' \code{\link[sp]{SpatialPolygonsDataFrame}}-object or
-#' \code{\link[sf]{sf}}-polygons with prediction locations
+#' @param observations \code{\link[sf]{sf}} polygons, or a vector data cube
+#'   with \code{stars} for spatiotemporal observations
+#' @param predictionLocations \code{\link[sf]{sf}} polygons, or a vector data
+#'   cube with \code{stars} for spatiotemporal prediction
+#'   locations
 #' @param formulaString formula that defines the dependent variable as a linear
 #' model of independent variables; suppose the dependent variable has name
 #' \code{z}, for ordinary and simple kriging use the formula \code{z~1}; for
@@ -25,7 +25,8 @@
 #' functions are evaluated either at the centroids of the areas or
 #' block-averaged over the discretisation points from \code{\link{rtopDisc}},
 #' controlled by the parameter \code{ukTrendSupport}, see
-#' \code{\link{getRtopParams}}.
+#' \code{\link{getRtopParams}}. For stars vector cubes, RHS covariates must
+#' be time-invariant for each spatial support.
 #' @param params parameters to modify the default parameters of the
 #' utop-package, set internally in this function by a call to
 #' \code{\link{getRtopParams}}
@@ -102,114 +103,36 @@ createRtopObject <- function(
   if (missing(observations)) {
     stop("Observations are missing")
   }
-  if (
-    !"area" %in% names(observations) &&
-      inherits(observations, "SpatialPolygons")
-  ) {
-    observations$area <- sapply(slot(observations, "polygons"), function(i) {
-      slot(i, "area")
-    })
-  } else if (
-    inherits(observations, "STS") && !"area" %in% names(observations@sp)
-  ) {
-    observations@sp$area <- sapply(
-      slot(observations@sp, "polygons"),
-      function(i) slot(i, "area")
-    )
-  } else if (inherits(observations, "sf") && !"area" %in% names(observations)) {
-    observations$area <- units::set_units(sf::st_area(observations), NULL)
+  if (utop_is_legacy_sp(observations)) {
+    utop_stop_legacy_sp(observations)
   }
+  observations <- utop_add_area(observations)
 
   object$observations <- observations
 
   if (!missing(predictionLocations)) {
-    if (
-      !"area" %in% names(predictionLocations) &&
-        inherits(predictionLocations, "SpatialPolygonsDataFrame")
-    ) {
-      predictionLocations$area <- sapply(
-        slot(predictionLocations, "polygons"),
-        function(i) slot(i, "area")
-      )
-    } else if (
-      !"area" %in% names(predictionLocations) &&
-        inherits(predictionLocations, "SpatialPolygons")
-    ) {
-      areas <- sapply(slot(predictionLocations, "polygons"), function(i) {
-        slot(i, "area")
-      })
-      predictionLocations <- sp::SpatialPolygonsDataFrame(
-        predictionLocations,
-        data = data.frame(area = areas),
-        match.ID = TRUE
-      )
-      #    } else if (!"length" %in% names(observations) && inherits(predictionLocations,"SpatialLines")) {
-      #       predictionLocations$length = sp::SpatialLinesLengths(predictionLocations)
-    } else if (
-      inherits(predictionLocations, "STS") &&
-        !"area" %in% names(predictionLocations@sp)
-    ) {
-      predictionLocations@sp$area <- sapply(
-        slot(predictionLocations@sp, "polygons"),
-        function(i) slot(i, "area")
-      )
-    } else if (
-      !"area" %in% names(predictionLocations) &&
-        inherits(predictionLocations, "sf")
-    ) {
-      predictionLocations$area <- units::set_units(
-        sf::st_area(predictionLocations),
-        NULL
-      )
+    if (utop_is_legacy_sp(predictionLocations)) {
+      utop_stop_legacy_sp(predictionLocations)
     }
-    if ((inherits(observations, "Spatial") | inherits(observations, "STS"))) {
-      p4o <- proj4string(observations)
-      p4p <- proj4string(predictionLocations)
-      if (!isTRUE(all.equal(is.na(p4o), is.na(p4p)))) {
-        stop("only one of observations and predictionLocations have projection")
-      }
-      if (!is.na(p4o) && p4o != p4p) {
-        warning(paste(
-          "observations and predictionLocations appear to have 
-                          different projections:",
-          p4o,
-          p4p,
-          "However, rgdal is retired and a full check cannot be done on 
-                          sp-objects. Please convert to sf"
-        ))
-      }
-    } else if (
-      inherits(observations, "sf") && !is.na(sf::st_crs(observations))
-    ) {
-      if (
-        !isTRUE(all.equal(
-          is.na(sf::st_crs(observations)),
-          is.na(sf::st_crs(predictionLocations))
-        ))
-      ) {
-        stop("only one of observations and predictionLocations have projection")
-      }
-      if (sf::st_crs(observations) != sf::st_crs(predictionLocations)) {
-        stop(paste(
-          "observations and predictionLocations have different projections:",
-          sf::st_crs(observations),
-          sf::st_crs(predictionLocations)
-        ))
-      }
+    predictionLocations <- utop_add_area(predictionLocations)
+
+    obs_crs <- sf::st_crs(utop_as_sf(observations))
+    pred_crs <- sf::st_crs(utop_as_sf(predictionLocations))
+    if (!isTRUE(all.equal(is.na(obs_crs), is.na(pred_crs)))) {
+      stop("only one of observations and predictionLocations have projection")
+    }
+    if (!is.na(obs_crs) && obs_crs != pred_crs) {
+      stop(paste(
+        "observations and predictionLocations have different projections:",
+        obs_crs,
+        pred_crs
+      ))
     }
 
     object$predictionLocations <- predictionLocations
   }
   if (missing(formulaString)) {
-    if ("obs" %in% names(observations)) {
-      formulaString <- "obs ~ 1"
-    } else if ("value" %in% names(observations)) {
-      formulaString <- "value ~ 1"
-    } else if (length(names(observations@data)) == 1) {
-      formulaString <- paste(names(observations@data), "~ 1")
-    } else {
-      stop("formulaString is missing and cannot be found from data")
-    }
+    formulaString <- utop_default_formula(observations)
     warning(paste("formulaString missing, using", formulaString))
   }
   if (!inherits(formulaString, "formula")) {
@@ -261,8 +184,8 @@ createRtopObject <- function(
 #' @param newPar A \code{list} of parameters for updating \code{params} or for
 #' modification of the default parameters.  Possible parameters with their
 #' defaults are given below
-#' @param observations \code{\link[sp]{SpatialPolygonsDataFrame}} with
-#' observations, used for setting some of the default parameters
+#' @param observations \code{\link[sf]{sf}} polygons, used for setting some
+#' of the default parameters
 #' @param formulaString formula that defines the dependent variable as a linear
 #' model of independent variables, see e.g. \code{\link{createRtopObject}} for
 #' more details.
@@ -450,17 +373,10 @@ getRtopParams <- function(
 
   if (!missing(observations) && !("parInit" %in% names(params))) {
     if (missing(formulaString)) {
-      if ("obs" %in% names(observations)) {
-        formulaString <- "obs ~ 1"
-      } else if ("value" %in% names(observations)) {
-        formulaString <- "value ~ 1"
-      } else if (length(names(observations@data)) == 1) {
-        formulaString <- paste(names(observations@data), "~ 1")
-      } else {
-        stop(
-          "getRtopParams: formulaString is missing and cannot be found from data"
-        )
-      }
+      formulaString <- utop_default_formula(
+        observations,
+        caller = "getRtopParams: formulaString"
+      )
       warning(paste(
         "getRtopParams: formulaString missing, using",
         formulaString
@@ -507,7 +423,6 @@ getRtopDefaultParams <- function(
   maxdist = Inf,
   nmax = 10,
   hstype = "regular", # Sampling type for hypothetical areas
-  #   rstype = ifelse(!missing(observations) && inherits(observations,"SpatialLines"),"regular","rtop"),
   # Sampling type for real areas
   rstype = "rtop",
   nclus = 1,
@@ -524,11 +439,6 @@ getRtopDefaultParams <- function(
   observations,
   formulaString
 ) {
-  #if (!missing(observations) & missing(cutoff)) {
-  #  x = sp::coordinates(observations)[, 1]
-  #  y = sp::coordinates(observations)[, 2]
-  #  cutoff = (0.35 * sqrt((max(x) - min(x))^2 + (max(y) - min(y))^2)/100)
-  #}
   list(
     model = model,
     nugget = nugget,
@@ -590,40 +500,19 @@ findParInitDefault <- function(model) {
 #########################################
 #' @noRd
 findParInit <- function(formulaString, observations, model) {
-  # For spacetime objects the geometry lives in @sp, so area must be read
-  # from there. Also add it there when it is missing.
-  has_area <- if (inherits(observations, "STS")) {
-    "area" %in% names(observations@sp)
-  } else {
-    "area" %in% names(observations)
-  }
-  if (!has_area) {
-    if (inherits(observations, "Spatial")) {
-      observations$area <- sapply(slot(observations, "polygons"), function(i) {
-        slot(i, "area")
-      })
-    } else if (inherits(observations, "STS")) {
-      observations@sp$area <- sapply(
-        slot(observations@sp, "polygons"),
-        function(i) slot(i, "area")
+  observations <- utop_add_area(observations)
+  if (inherits(observations, "stars")) {
+    ntime <- utop_stars_ntime(observations)
+    if (ntime > 20) {
+      observations <- utop_stars_slice_time(
+        observations,
+        sample(seq_len(ntime), 20)
       )
-    } else {
-      observations$area <- units::set_units(sf::st_area(observations), NULL)
     }
-  }
-  if (inherits(observations, "STS")) {
-    ntime <- dim(observations)[2]
-    # ST* indexing is [space, time]; sampling only time preserves all
-    # spatial locations, which is required for a valid sample variogram.
-    observations <- observations[, sample(1:ntime, min(20, ntime))]
-    # rtopVariogram.STSDF detrends universal kriging formulas internally
     vario <- rtopVariogram(observations, formulaString = formulaString)
-    # $area does not fall through to @sp for ST* objects.
-    aObs <- observations@sp$area
+    aObs <- utop_area(observations)
   } else {
     if (hasUkTrend(formulaString)) {
-      # Initial variogram parameters from the residual (detrended) field;
-      # centroid evaluation is sufficient at this stage.
       observations$ukResidual <- ukResiduals(formulaString, observations)
       formulaString <- ukResidual ~ 1
     }

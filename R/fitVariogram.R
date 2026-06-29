@@ -10,15 +10,12 @@ rtopFitVariogram.rtop <- function(object, params = list(), iprint = 0, ...) {
     object <- rtopVariogram(object, ...)
   }
 
-  if (params$nugget) {
-    if (!"overlapObs" %in% names(object)) {
-      overlapObs <- findOverlap(
-        observations,
-        observations,
-        partialOverlap = TRUE
-      )
-    }
-    object$overlapObs <- overlapObs
+  if (params$nugget && !"overlapObs" %in% names(object)) {
+    object$overlapObs <- findOverlap(
+      object$observations,
+      object$observations,
+      partialOverlap = TRUE
+    )
   }
   if (params$cloud) {
     vario <- object$variogramCloud
@@ -240,23 +237,32 @@ rtopFitVariogram.sf <- function(object, params = list(), ...) {
 
 #' @export
 #' @rdname rtopFitVariogram
-rtopFitVariogram.SpatialPointsDataFrame <- function(
-  object,
-  params = list(),
-  ...
-) {
-  rtopFitVariogram.sf(object, params, ...)
+rtopFitVariogram.stars <- function(object, params = list(), ...) {
+  if (!inherits(params, "rtopParams")) {
+    params <- getRtopParams(params, ...)
+  }
+  vario <- rtopVariogram(object, params = params, ...)
+  rtopFitVariogram(vario = vario, observations = object, params = params, ...)
 }
 
 #' @export
-#' @rdname rtopFitVariogram
-rtopFitVariogram.SpatialPolygonsDataFrame <- function(
-  object,
-  params = list(),
-  ...
-) {
-  rtopFitVariogram.sf(object, params, ...)
+#' @noRd
+rtopFitVariogram.SpatialPointsDataFrame <- function(object, ...) {
+  utop_stop_legacy_sp(object)
 }
+
+#' @export
+#' @noRd
+rtopFitVariogram.SpatialPolygonsDataFrame <- function(object, ...) {
+  utop_stop_legacy_sp(object)
+}
+
+#' @export
+#' @noRd
+rtopFitVariogram.STSDF <- function(object, ...) {
+  utop_stop_legacy_sp(object, target = "stars")
+}
+
 
 
 #' @noRd
