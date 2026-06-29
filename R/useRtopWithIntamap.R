@@ -1,50 +1,13 @@
-#' Integrates the utop package with the \code{intamap} package
+#' Legacy intamap integration
 #'
-#' This function makes it possible to use \code{rtop}-objects in the functions
-#' of the package. It is necessary to load the \code{intamap}-package before
-#' calling this function.
+#' The old S3 intamap registration path has been removed as part of the S7
+#' object model migration. A new integration should be designed against the S7
+#' API if intamap support is needed again.
 #'
-#'
-#' @return The function will have as side effect that the intamap package is
-#' loaded, and that rtop-methods are registered for the intamap-functions
-#' estimateParameters, spatialPredict and methodParameters.
-#' @author Jon Olav Skoien
-#' @references Pebesma, E., Cornford, D., Dubois, G., Heuvelink, G.B.M.,
-#' Hristopulos, D., Pilz, J., Stohlker, U., Morin, G., Skoien, J.O. INTAMAP:
-#' The design and implementation f an interoperable automated interpolation Web
-#' Service. Computers and Geosciences 37 (3), 2011.
-#'
-#' Skoien J. O., R. Merz, and G. Bloschl. Top-kriging - geostatistics on stream
-#' networks. Hydrology and Earth System Sciences, 10:277-287, 2006.
-#'
-#' Skoien, J. O., Bloschl, G., Laaha, G., Pebesma, E., Parajka, J., Viglione,
-#' A., 2014. Rtop: An R package for interpolation of data with a variable
-#' spatial support, with an example from river networks. Computers &
-#' Geosciences, 67.
-#' @keywords plot
-#' @examples
-#'
-#' if (require(intamap)) useRtopWithIntamap()
-#'
-#' @export
+#' @noRd
 useRtopWithIntamap <- function() {
-  if (!"intamap" %in% loadedNamespaces()) {
-    stop(
-      "Please load intamap with library(intamap) before rerunning this function"
-    )
-  }
-
-  packageStartupMessage("Loading optional package: intamap \n")
-  info <- matrix(
-    c(
-      "estimateParameters",
-      "spatialPredict",
-      "methodParameters",
-      rep("rtop", 3),
-      rep(NA, 3)
-    ),
-    ncol = 3
+  stop(
+    "intamap integration for legacy rtop S3 objects has been removed",
+    call. = FALSE
   )
-  #    info[3,2] = "rtopVariogramModel"
-  registerS3methods(info, package = "intamap", env = environment(rtopVariogram))
 }
