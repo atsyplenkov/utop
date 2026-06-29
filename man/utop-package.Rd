@@ -39,9 +39,9 @@ The data in the example below are stored as shape-files in the
 extdata-directory of the utop-package, use the directory of your own data
 instead. The observations consist of mean summer runoff from 138 catchments
 in Upper Austria. The predictionLocations are 863 catchments in the same
-region. observations and predictionLocations can either be stored as
-\code{\link[sp]{SpatialPolygonsDataFrame}}-objects, or as
-\code{\link[sf]{sf}}-polygons.
+region. observations and predictionLocations should be stored as
+\code{\link[sf]{sf}} polygons. Spatiotemporal data are represented as
+vector data cubes with \code{stars}.
 
 \preformatted{ rpath = system.file("extdata",package="utop") library(sf)
 observations = st_read(rpath, "observations") predictionLocations =
@@ -78,23 +78,12 @@ computationally expensive part of the interpolation. Cross-validation can be
 called with the argument \code{cv=TRUE}, either in \code{params} or in the
 call to \code{\link{rtopKrige}}.
 
-\preformatted{ rtopObj = rtopKrige(rtopObj) if (is(rtopObj$predictions,
-"Spatial")) { spplot(rtopObj$predictions, col.regions = bpy.colors(),
-c("var1.pred")) } else { # the plotting order to get small polygons on top
-is not automatic with sf, # but here is a method that works without
-modifying the predictions library(dplyr) # Arrange according to areas
-attribute in descending order rtopObj$predictions |> arrange(desc(AREASQKM))
-|> # Make ggplot and set fill color to var1.pred ggplot(aes(fill =
-var1.pred)) + geom_sf() } rtopObj = rtopKrige(rtopObj, cv = TRUE)
+\preformatted{ rtopObj = rtopKrige(rtopObj)
+# plot predictions with sf/ggplot2
+ggplot(rtopObj$predictions) + aes(fill = var1.pred) + geom_sf()
 
-if (is(rtopObj$predictions, "Spatial")) { spplot(rtopObj$predictions,
-col.regions = bpy.colors(), c("var1.pred","var1.var")) } else { # Here is an
-alternative method for plotting small polygons on top of the larger ones, #
-modifying the predictions rtopObj$predictions =
-rtopObj$predictions[order(rtopObj$predictions$AREASQ, decreasing = TRUE), ]
-# It is also possible to change the order of the polygons
-ggplot(rtopObj$predictions) + aes(fill = var1.pred) + geom_sf() +
-scale_fill_distiller(palette = "YlOrRd") } }
+rtopObj = rtopKrige(rtopObj, cv = TRUE)
+ggplot(rtopObj$predictions) + aes(fill = var1.var) + geom_sf() }
 }
 
 \references{

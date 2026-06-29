@@ -31,9 +31,8 @@
 rtopSim(object, ...)
 }
 \arguments{
-\item{object}{object of class \code{rtop} or
-\code{\link[sp]{SpatialPolygonsDataFrame}} or \code{sf}
-(\code{\link[sf]{st_sf}}) or \code{NULL}}
+\item{object}{object of class \code{rtop}, \code{\link[sf]{sf}}, or
+\code{NULL}}
 
 \item{varMatUpdate}{logical; if TRUE, also existing variance matrices will
 be recomputed, if FALSE, only missing variance matrices will be computed,
@@ -64,9 +63,8 @@ object parameters}
 \item{...}{possible modification of the object parameters or default
 parameters.}
 
-\item{predictionLocations}{\code{\link[sp]{SpatialPolygons}} or
-\code{\link[sp]{SpatialPolygonsDataFrame}} or \code{sf}-object with
-locations for simulations.}
+\item{predictionLocations}{\code{\link[sf]{sf}} object with locations for
+simulations.}
 
 \item{varMatObs}{covariance matrix of possible observations, where diagonal
 must consist of internal variance, typically generated from call to
@@ -83,12 +81,10 @@ generated from a call to \code{\link{varMat}}}
 \code{\link{rtopVariogramModel}}}
 }
 \value{
-If called with \code{\link[sp]{SpatialPolygons}} or \code{sf} as
-predictionLocations and either \cr
-\code{\link[sp]{SpatialPolygonsDataFrame}}, \code{sf} or \code{NULL} for
-observations, the function returns a\cr
-\code{\link[sp]{SpatialPolygonsDataFrame}} or \code{sf} with simulations at
-the locations defined in \cr \code{predictionLocations}
+If called with \code{sf} as predictionLocations and either
+\code{sf} or \code{NULL} for observations, the function returns an
+\code{sf} object with simulations at the locations defined in
+\code{predictionLocations}
 
 If called with an rtop-object, the function returns the same object with the
 simulations added to the object.
@@ -160,8 +156,8 @@ rtopObj11$observations <- NULL
 rtopObj12 <- rtopSim(rtopObj11, nsim = 10, beta = 0.01,
                     varMatUpdate = TRUE)
 
-sp::summary(data.frame(rtopObj10$simulations))
-sp::summary(data.frame(rtopObj12$simulations))
+summary(data.frame(rtopObj10$simulations))
+summary(data.frame(rtopObj12$simulations))
 
 }
 

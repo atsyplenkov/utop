@@ -2,29 +2,29 @@
 % Please edit documentation in R/rtopVario.R, R/zzz.R
 \name{rtopVariogram.sf}
 \alias{rtopVariogram.sf}
-\alias{rtopVariogram.SpatialPolygonsDataFrame}
-\alias{rtopVariogram.SpatialPointsDataFrame}
 \alias{rtopVariogram.rtop}
-\alias{rtopVariogram.STSDF}
+\alias{rtopVariogram.stars}
 \alias{rtopVariogram}
 \title{create variogram for data with spatial support}
 \usage{
-\method{rtopVariogram}{sf}(object, formulaString, params = list(), discPoints = NULL, ...)
-
-\method{rtopVariogram}{SpatialPolygonsDataFrame}(object, formulaString, params = list(), discPoints = NULL, ...)
-
-\method{rtopVariogram}{SpatialPointsDataFrame}(object, formulaString, params = list(), cloud, abins, dbins, ...)
+\method{rtopVariogram}{sf}(
+  object,
+  formulaString,
+  params = list(),
+  cloud,
+  discPoints = NULL,
+  ...
+)
 
 \method{rtopVariogram}{rtop}(object, params = list(), ...)
 
-\method{rtopVariogram}{STSDF}(
+\method{rtopVariogram}{stars}(
   object,
   formulaString,
   params = list(),
   cloud,
   abins,
   dbins,
-  data.table = FALSE,
   discPoints = NULL,
   ...
 )
@@ -32,12 +32,11 @@
 rtopVariogram(object, ...)
 }
 \arguments{
-\item{object}{object of class \code{rtop} (see \link{utop-package}) or a
-\cr \code{\link[sp:SpatialPolygons]{SpatialPolygonsDataFrame}} or
-\code{\link[sp:SpatialPoints]{SpatialPointsDataFrame}} with information
-about observations. If \cr \code{object} is a \cr
-\code{\link[sp:SpatialPoints]{SpatialPointsDataFrame}}, it must have a
-column with name \code{area}.}
+\item{object}{object of class \code{rtop} (see \link{utop-package}), an
+\code{\link[sf]{sf}} object with areal observations, or a vector data cube
+with \code{stars}. Observation data must include an
+\code{area} column/attribute or have polygon geometries from which area can
+be computed.}
 
 \item{formulaString}{formula that defines the dependent variable as a linear
 model of independent variables; suppose the dependent variable has name
@@ -50,6 +49,9 @@ first column of the data set is used.}
 \item{params}{a set of parameters, used to modify the default parameters for
 the \code{rtop} package, set in \code{\link{getRtopParams}}.}
 
+\item{cloud}{logical; if TRUE, calculate the semivariogram cloud, can be
+used to overrule the cloud parameter in params.}
+
 \item{discPoints}{list of discretisation points of the observation areas
 from \code{\link{rtopDisc}}, only used for block-averaging of
 coordinate-based trend basis functions when the formula describes
@@ -57,19 +59,11 @@ universal kriging and \code{ukTrendSupport = "block"}; computed internally
 when needed and not supplied}
 
 \item{...}{parameters to other functions called, e.g. gstat's
-\code{\link[gstat]{variogram}}-function and to
-\code{\link{rtopVariogram.SpatialPointsDataFrame}} when the method is called
-with an object of a different class}
-
-\item{cloud}{logical; if TRUE, calculate the semivariogram cloud, can be
-used to overrule the cloud parameter in params.}
+\code{\link[gstat]{variogram}}-function}
 
 \item{abins}{possibility to set areal bins (not yet implemented)}
 
 \item{dbins}{possibility to set distance bins (not yet implemented)}
-
-\item{data.table}{an option to use data.table internally for the variogram
-computation for \code{\link[spacetime]{STSDF}}-objects}
 }
 \value{
 The function creates a variogram, either of type
@@ -79,10 +73,8 @@ additional information about the spatial size or length of the observations.
 An rtop-object with the variogram added is returned if the function is
 called with an rtop-object as argument.
 
-For spatio-temporal objects (\code{\link[spacetime]{STSDF}}), the variogram
-is the spatially variogram, averaged for all time steps. There is a
-possibility to use data.table internally in this function, which can improve
-computation time for some cases.
+For spatiotemporal \code{stars} vector data cubes, the variogram is spatial
+and averaged over all time steps.
 }
 \description{
 rtopVariogram will create binned variogram or cloud variogram of data with

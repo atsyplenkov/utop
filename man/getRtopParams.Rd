@@ -21,8 +21,8 @@ of the default parameters}
 modification of the default parameters.  Possible parameters with their
 defaults are given below}
 
-\item{observations}{\code{\link[sp]{SpatialPolygonsDataFrame}} with
-observations, used for setting some of the default parameters}
+\item{observations}{\code{\link[sf]{sf}} polygons, used for setting some
+of the default parameters}
 
 \item{formulaString}{formula that defines the dependent variable as a linear
 model of independent variables, see e.g. \code{\link{createRtopObject}} for

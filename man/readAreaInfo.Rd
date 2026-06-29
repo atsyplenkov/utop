@@ -2,8 +2,7 @@
 % Please edit documentation in R/rtopread.R
 \name{readAreaInfo}
 \alias{readAreaInfo}
-\title{create SpatialPointsDataFrame with observations of data with a spatial
-support}
+\title{create data.frame with observations of data with a spatial support}
 \usage{
 readAreaInfo(
   fname = "ainfo.txt",
@@ -38,8 +37,8 @@ than id should be used.}
 \item{moreCols}{name of other column names the user wants included in ainfo}
 }
 \value{
-\code{\link[sp:SpatialPoints]{SpatialPointDataFrame}} with
-information about observations and/or predictionLocations.
+\code{data.frame} with information about observations and/or
+predictionLocations.
 }
 \description{
 readAreaInfo will read a text file with observations and descriptions of

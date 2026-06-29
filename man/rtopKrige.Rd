@@ -2,25 +2,12 @@
 % Please edit documentation in R/rtopKrige.R, R/tskrige.R, R/zzz.R
 \name{rtopKrige.rtop}
 \alias{rtopKrige.rtop}
-\alias{rtopKrige.SpatialPolygonsDataFrame}
 \alias{rtopKrige.default}
-\alias{rtopKrige.STSDF}
+\alias{rtopKrige.stars}
 \alias{rtopKrige}
 \title{Spatial interpolation of data with spatial support}
 \usage{
 \method{rtopKrige}{rtop}(object, varMatUpdate = FALSE, params = list(), ...)
-
-\method{rtopKrige}{SpatialPolygonsDataFrame}(
-  object,
-  predictionLocations = NULL,
-  varMatObs,
-  varMatPredObs,
-  varMat,
-  params = list(),
-  formulaString,
-  sel,
-  ...
-)
 
 \method{rtopKrige}{default}(
   object,
@@ -39,7 +26,7 @@
   ...
 )
 
-\method{rtopKrige}{STSDF}(
+\method{rtopKrige}{stars}(
   object,
   predictionLocations = NULL,
   varMatObs,
@@ -57,8 +44,8 @@
 rtopKrige(object, ...)
 }
 \arguments{
-\item{object}{object of class \code{rtop} or
-\code{\link[sp]{SpatialPolygonsDataFrame}} or \code{\link[spacetime]{STSDF}}}
+\item{object}{object of class \code{rtop}, \code{\link[sf]{sf}}, or
+\code{stars}}
 
 \item{varMatUpdate}{logical; if TRUE, also existing variance matrices will
 be recomputed, if FALSE, only missing variance matrices will be computed,
@@ -78,9 +65,9 @@ neighbours, respectively, and \code{wlim}, the limit for the absolute values
 of the weights. It can also be useful to set \code{singularSolve} if some of
 the areas are almost similar, see also details below.}
 
-\item{predictionLocations}{\code{\link[sp]{SpatialPolygons}} or
-\code{\link[sp]{SpatialPolygonsDataFrame}} or \code{\link[spacetime]{STSDF}}
-with prediction locations. NULL if cross validation is to be performed.}
+\item{predictionLocations}{\code{\link[sf]{sf}} or
+\code{stars} object with prediction locations. NULL if cross
+validation is to be performed.}
 
 \item{varMatObs}{covariance matrix of observations, where diagonal must
 consist of internal variance, typically generated from call to
@@ -126,11 +113,12 @@ for the predicitonLocations. See also details}
 exactly or approximate}
 }
 \value{
-If called with \code{\link[sp]{SpatialPolygonsDataFrame}}, the
-function returns a \cr \code{\link[sp]{SpatialPolygonsDataFrame}} with
-predictions, either at the locations defined in \cr
-\code{predictionLocations}, or as leave-one-out cross-validation predicitons
-at the same locations as in object if \code{cv = TRUE}
+If called with \code{\link[sf]{sf}}, the function returns an
+\code{sf} object with predictions, either at the locations defined in
+\code{predictionLocations}, or as leave-one-out cross-validation predictions
+at the same locations as in object if \code{cv = TRUE}. For
+\code{stars}, a stars object with prediction attributes is
+returned.
 
 If called with an rtop-object, the function returns the same object with the
 predictions added to the object.
@@ -177,18 +165,18 @@ the mean of the two observations. An overview of removed neighbours can be
 seen in the resulting object, under the name \code{removed}.
 
 Kriging of time series is possible when \code{observations} and
-\code{predictionLocations} are spatiotemporal objects of type
-\code{\link[spacetime]{STSDF}}. The interpolation is still spatial, in the
-sense that the regularisation of the variograms are just done using the
-spatial extent of the observations, not a possible temporal extent, such as
-done by Skoien and Bloschl (2007). However, it is possible to make
-predictions based on observations from different time steps, through the use
-of the lag-vectors. These vectors describe a typical "delay" for each
-observation and prediction location. This delay could for runoff related
-variables be similar to travel time to each gauging location. For a certain
-prediction location, earlier time steps would be picked for neighbours with
-shorter travel time and later time steps for neighbours with slower travel
-times.
+\code{predictionLocations} are \code{stars} vector data cubes
+with one spatial \code{sfc} dimension and one time dimension. The
+interpolation is still spatial, in the sense that regularisation of the
+variograms uses the spatial extent of the observations, not a possible
+temporal extent, such as done by Skoien and Bloschl (2007). However, it is
+possible to make predictions based on observations from different time steps,
+through the use of the lag-vectors. These vectors describe a typical
+"delay" for each observation and prediction location. This delay could for
+runoff related variables be similar to travel time to each gauging location.
+For a certain prediction location, earlier time steps would be picked for
+neighbours with shorter travel time and later time steps for neighbours with
+slower travel times.
 
 The lagExact parameter indicates whether to use a weighted average of two
 time steps, or just the time step which is closest to the difference in lag
@@ -205,7 +193,8 @@ the discretisation points of \code{\link{rtopDisc}}, controlled by the
 parameter \code{ukTrendSupport} (see \code{\link{getRtopParams}}). The
 sample variogram is in this case computed from the residuals against an
 OLS fit of the trend. For spatiotemporal interpolation the trend variables
-have to be time-invariant columns of the \code{sp}-slot.
+have to be time-invariant stars attributes; time-varying stars attributes
+are not used as support-level trend covariates.
 
 The use of lag times should in theory increase the computation time, but
 might, due to different computation methods, even speed up the computation

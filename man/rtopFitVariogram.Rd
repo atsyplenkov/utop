@@ -5,8 +5,7 @@
 \alias{rtopFitVariogram.rtopVariogram}
 \alias{rtopFitVariogram.rtopVariogramCloud}
 \alias{rtopFitVariogram.sf}
-\alias{rtopFitVariogram.SpatialPointsDataFrame}
-\alias{rtopFitVariogram.SpatialPolygonsDataFrame}
+\alias{rtopFitVariogram.stars}
 \alias{rtopFitVariogram}
 \title{Fit variogram model to sample variogram of data with spatial support}
 \usage{
@@ -36,9 +35,7 @@
 
 \method{rtopFitVariogram}{sf}(object, params = list(), ...)
 
-\method{rtopFitVariogram}{SpatialPointsDataFrame}(object, params = list(), ...)
-
-\method{rtopFitVariogram}{SpatialPolygonsDataFrame}(object, params = list(), ...)
+\method{rtopFitVariogram}{stars}(object, params = list(), ...)
 
 rtopFitVariogram(object, ...)
 }
@@ -47,10 +44,8 @@ rtopFitVariogram(object, ...)
 \code{rtopVariogramCloud}, or an object with class \code{rtop} that includes
 the sample variograms.
 
-The object can also be of class \code{\link[sp]{SpatialPolygonsDataFrame}}
-or \cr \code{\link[sp]{SpatialPointsDataFrame}} with observations. If
-\code{object} is a \cr \code{\link[sp]{SpatialPointsDataFrame}}, it must
-have a column with name \code{area}.}
+The object can also be an \code{\link[sf]{sf}} object or a
+\code{stars} vector data cube with observations.}
 
 \item{params}{a set of parameters, used to modify the default parameters for
 the \code{rtop} package, set in \code{\link{getRtopParams}}. The argument
@@ -62,8 +57,9 @@ params can also be used for the other methods, through the ...-argument.}
 \code{rtopFitVarigoram}. For the three first methods of the function,
 \code{...} can also include parameters to the last two methods.}
 
-\item{observations}{the observations, passed as a Spatial*DataFrame object,
-if object is an \cr \code{rtopVariogram} or \code{rtopVariogramCloud}}
+\item{observations}{the observations, passed as an \code{sf} or
+\code{stars} object if object is an \code{rtopVariogram} or
+\code{rtopVariogramCloud}}
 
 \item{dists}{either a matrix with geostatistical distances (created by a
 call to the function \code{\link{gDist}} or a list with the areas

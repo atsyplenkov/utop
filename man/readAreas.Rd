@@ -2,14 +2,14 @@
 % Please edit documentation in R/rtopread.R
 \name{readAreas}
 \alias{readAreas}
-\title{help file for creating SpatialPolygonsDataFrame with observations and/or
+\title{help file for creating \code{sf} objects with observations and/or
 predictionLocations of data with a spatial support}
 \usage{
 readAreas(object, adir = ".", ftype = "xy", projection = NA, ...)
 }
 \arguments{
-\item{object}{either name of file with areal information or
-\code{\link[sp]{SpatialPointsDataFrame}} with observations}
+\item{object}{either name of file with areal information or data frame with
+observations}
 
 \item{adir}{directory where the files with areal information are to be found}
 
@@ -21,19 +21,19 @@ referring to x- and y-coordinates of boundaries}
 \item{...}{further parameters to be passed to \code{\link{readAreaInfo}}}
 }
 \value{
-The function creates a
-\code{\link[sp:SpatialPolygons]{SpatialPolygonsDataFrame}} of observations
+The function creates an \code{sf} object of observations and/or
+predictionLocations, depending on the information given in \code{object}.
 and/or predictionLocations, depending on the information given in
 \code{object}.
 }
 \description{
 readAreas will read area-files, add observations and convert the result to
-\cr \code{\link[sp]{SpatialPolygonsDataFrame}}
+\code{\link[sf]{sf}}.
 }
 \details{
 If \code{object} is a file name, \code{\link{readAreaInfo}} will be called.
-If it is a \cr \code{\link[sp:SpatialPoints]{SpatialPointsDataFrame}} with
-observations and/or predictionLocations, the function will read areal data
+If it is a data frame with observations and/or predictionLocations, the
+function will read areal data from files according to the ID associated with
 from files according to the ID associated with each
 observation/predictionLocation.
 

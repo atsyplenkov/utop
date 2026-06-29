@@ -4,8 +4,7 @@
 \alias{rtopDisc.rtopVariogram}
 \alias{rtopDisc.rtop}
 \alias{rtopDisc.sf}
-\alias{rtopDisc.SpatialPolygonsDataFrame}
-\alias{rtopDisc.SpatialPolygons}
+\alias{rtopDisc.stars}
 \alias{rtopDisc}
 \title{Discretize areas}
 \usage{
@@ -15,17 +14,19 @@
 
 \method{rtopDisc}{sf}(object, params = list(), bb = sf::st_bbox(object), ...)
 
-\method{rtopDisc}{SpatialPolygonsDataFrame}(object, params = list(), bb = sp::bbox(object), ...)
-
-\method{rtopDisc}{SpatialPolygons}(object, params = list(), bb = sp::bbox(object), ...)
+\method{rtopDisc}{stars}(
+  object,
+  params = list(),
+  bb = sf::st_bbox(utop_stars_support(object)),
+  ...
+)
 
 rtopDisc(object, ...)
 }
 \arguments{
-\item{object}{object of class \code{\link[sp]{SpatialPolygons}} or
-\code{\link[sp:SpatialPolygons]{SpatialPolygonsDataFrame}} or
-\code{rtopVariogram}, or an object with class \code{rtop} that includes one
-of the above}
+\item{object}{object of class \code{\link[sf]{sf}},
+\code{stars}, or \code{rtopVariogram}, or an object with class
+\code{rtop} that includes one of the above}
 
 \item{params}{possibility to pass parameters to modify the default
 parameters for the \code{rtop} package, set in \code{\link{getRtopParams}}.

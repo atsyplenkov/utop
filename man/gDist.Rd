@@ -2,29 +2,26 @@
 % Please edit documentation in R/gDist.r, R/zzz.R
 \name{gDist.rtop}
 \alias{gDist.rtop}
-\alias{gDist.SpatialPolygonsDataFrame}
-\alias{gDist.SpatialPolygons}
 \alias{gDist.sf}
+\alias{gDist.stars}
 \alias{gDist.list}
 \alias{gDist}
 \title{calculate geostatistical distances between areas}
 \usage{
 \method{gDist}{rtop}(object, params = list(), ...)
 
-\method{gDist}{SpatialPolygonsDataFrame}(object, object2 = NULL, ...)
-
-\method{gDist}{SpatialPolygons}(object, object2 = NULL, ...)
-
 \method{gDist}{sf}(object, object2 = NULL, ...)
+
+\method{gDist}{stars}(object, object2 = NULL, ...)
 
 \method{gDist}{list}(object, object2 = NULL, diag = FALSE, debug.level = 0, ...)
 
 gDist(object, ...)
 }
 \arguments{
-\item{object}{object of class \code{\link[sp]{SpatialPolygons}} or
-\code{\link{rtopDisc}}; or object of class \code{rtop} with such boundaries
-and/or discretized elements (the individual areas)}
+\item{object}{object of class \code{\link[sf]{sf}} or \code{\link{rtopDisc}};
+or object of class \code{rtop} with such boundaries and/or discretized
+elements (the individual areas)}
 
 \item{params}{a set of parameters, used to modify the default parameters for
 the \code{rtop} package, set in \code{\link{getRtopParams}}. The argument
@@ -53,10 +50,9 @@ distances between the elements in the two lists. If called with \code{diag =
 TRUE}, the function returns an array of the geostatistical distance within
 each of the elements in the list.
 
-If called with one \code{\link[sp]{SpatialPolygons}} or
-\code{\link[sp]{SpatialPolygonsDataFrame}} or the function returns a list
+If called with one \code{\link[sf]{sf}} object, the function returns a list
 with one matrix with geostatistical distances between the elements of the
-object. If called with two objects, the list will also containt a matrix of
+object. If called with two objects, the list will also contain a matrix of
 the geostatistical distances between the elements of the two objects, and an
 array of the geostatistical distances within the elements of the second
 object.

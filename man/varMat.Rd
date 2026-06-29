@@ -3,10 +3,9 @@
 \name{varMat.rtop}
 \alias{varMat.rtop}
 \alias{varMat.matrix}
-\alias{varMat.SpatialPolygonsDataFrame}
-\alias{varMat.SpatialPolygons}
+\alias{varMat.sf}
+\alias{varMat.stars}
 \alias{varMat.list}
-\alias{varMat.STS}
 \alias{varMat}
 \title{create a semivariogram matrix between a set of locations, or semivariogram
 matrices between and within two sets of locations}
@@ -15,9 +14,9 @@ matrices between and within two sets of locations}
 
 \method{varMat}{matrix}(object, variogramModel, diag = FALSE, sub1, sub2, ...)
 
-\method{varMat}{SpatialPolygonsDataFrame}(object, object2 = NULL, ...)
+\method{varMat}{sf}(object, object2 = NULL, ...)
 
-\method{varMat}{SpatialPolygons}(object, object2 = NULL, variogramModel, overlapObs, overlapPredObs, ...)
+\method{varMat}{stars}(object, object2 = NULL, ...)
 
 \method{varMat}{list}(
   object,
@@ -32,8 +31,6 @@ matrices between and within two sets of locations}
   debug.level = ifelse(interactive(), 1, 0),
   ...
 )
-
-\method{varMat}{STS}(object, object2 = NULL, variogramModel, overlapObs, overlapPredObs, ...)
 
 varMat(object, ...)
 }
@@ -78,11 +75,6 @@ locations}
 object of the same class as \code{object} with a possible second set of
 locations with support}
 
-\item{overlapObs}{matrix with observations that overlap each other}
-
-\item{overlapPredObs}{matrix with \code{observations} and
-\code{predictionLocations} that overlap each other}
-
 \item{coor1}{coordinates of centroids of \code{object}}
 
 \item{coor2}{coordinates of centre-of-gravity of \code{object2}}
@@ -114,9 +106,9 @@ procedure is cross-validation before interpolation. Should be set to TRUE if
 the variogram Model has been changed, or if observation and/or prediction
 locations have been changed.
 
-If an \code{rtop}-object contains observations and/or predictionLocations of
-type \code{\link[spacetime]{STSDF}}, the covariance matrix is computed based
-on the spatial properties of the object.
+If an \code{rtop}-object contains observations and/or predictionLocations as
+\code{stars} vector data cubes, the covariance matrix is
+computed from the spatial supports.
 }
 \examples{
 

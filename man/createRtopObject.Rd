@@ -15,12 +15,12 @@ createRtopObject(
 )
 }
 \arguments{
-\item{observations}{\code{\link[sp]{SpatialPolygonsDataFrame}} or
-\code{\link[sf]{sf}}-polygons with observations}
+\item{observations}{\code{\link[sf]{sf}} polygons, or a vector data cube
+with \code{stars} for spatiotemporal observations}
 
-\item{predictionLocations}{a \code{\link[sp]{SpatialPolygons}},
-\code{\link[sp]{SpatialPolygonsDataFrame}}-object or
-\code{\link[sf]{sf}}-polygons with prediction locations}
+\item{predictionLocations}{\code{\link[sf]{sf}} polygons, or a vector data
+cube with \code{stars} for spatiotemporal prediction
+locations}
 
 \item{formulaString}{formula that defines the dependent variable as a linear
 model of independent variables; suppose the dependent variable has name
@@ -34,7 +34,8 @@ the reserved coordinate names \code{x} and \code{y}. The trend basis
 functions are evaluated either at the centroids of the areas or
 block-averaged over the discretisation points from \code{\link{rtopDisc}},
 controlled by the parameter \code{ukTrendSupport}, see
-\code{\link{getRtopParams}}.}
+\code{\link{getRtopParams}}. For stars vector cubes, RHS covariates must
+be time-invariant for each spatial support.}
 
 \item{params}{parameters to modify the default parameters of the
 utop-package, set internally in this function by a call to
