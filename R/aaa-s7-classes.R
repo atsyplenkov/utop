@@ -10,9 +10,11 @@
 #' @param cn_areas Number of areas used in cluster-related calculations.
 #' @param rs_type,hs_type,clus_type,outfile,wlim_method,uk_trend_support
 #'   Character parameters.
-#' @param fit_method,g_dist_est,g_dist_pred,var_clean,max_dist Variogram and
-#'   distance parameters.
+#' @param fit_method,g_dist_est,var_clean,max_dist Variogram and distance
+#'   parameters.
 #' @param partial_overlap Whether partially overlapping areas are supported.
+#' @param g_dist_pred Geostatistical distance parameter or computed distance
+#'   object, depending on the class.
 #' @param wlim,singular_solve,debug_level Additional tuning parameters.
 #' @param par_init Initial parameter bounds.
 #' @param data Data stored in variogram objects.
@@ -23,7 +25,7 @@
 #' @param formula Model formula.
 #' @param variogram,variogram_cloud,variogram_model Variogram results.
 #' @param predictions,simulations Prediction and simulation results.
-#' @param d_obs,d_pred,g_dist_obs,g_dist_pred,g_dist_pred_obs,g_dist_bin,d_bin
+#' @param d_obs,d_pred,g_dist_obs,g_dist_pred_obs,g_dist_bin,d_bin
 #'   Discretisation and geostatistical distance objects.
 #' @param overlap_obs,overlap_pred_obs Overlap matrices.
 #' @param var_mat_obs,var_mat_pred_obs,var_mat_pred Covariance matrices.
@@ -109,9 +111,13 @@ UtopVariogramModel <- S7::new_class(
 UtopVariogram <- S7::new_class(
   "UtopVariogram",
   package = "utop",
-  properties = list(
-    data = S7::new_property(S7::class_data.frame, default = data.frame())
-  )
+  constructor = function(data = NULL) {
+    if (is.null(data)) {
+      data <- data.frame()
+    }
+    S7::new_object(S7::S7_object(), data = data)
+  },
+  properties = list(data = S7::new_property(S7::class_data.frame))
 )
 
 #' @rdname utop-s7-classes
@@ -119,9 +125,13 @@ UtopVariogram <- S7::new_class(
 UtopVariogramCloud <- S7::new_class(
   "UtopVariogramCloud",
   package = "utop",
-  properties = list(
-    data = S7::new_property(S7::class_data.frame, default = data.frame())
-  )
+  constructor = function(data = NULL) {
+    if (is.null(data)) {
+      data <- data.frame()
+    }
+    S7::new_object(S7::S7_object(), data = data)
+  },
+  properties = list(data = S7::new_property(S7::class_data.frame))
 )
 
 #' @rdname utop-s7-classes

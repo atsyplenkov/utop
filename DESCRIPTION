@@ -1,7 +1,7 @@
 Package: utop
 Type: Package
 Title: Interpolation of Data with Variable Spatial Support
-Version: 0.1.1
+Version: 0.1.1.9999
 Authors@R: c(person("Jon Olav", "Skøien", role = c("aut", "cre"), email = "jon.skoien@gmail.com"),
             person("Anatoly", "Tsyplenkov", role = "aut", email = "sharp.couch9400@fastmail.com"))
 Imports:

@@ -47,15 +47,9 @@ UtopVariogramModel(
   criterion = NULL
 )
 
-UtopVariogram(
-  data = structure(list(), names = character(0), row.names = integer(0), class =
-    "data.frame")
-)
+UtopVariogram(data = NULL)
 
-UtopVariogramCloud(
-  data = structure(list(), names = character(0), row.names = integer(0), class =
-    "data.frame")
-)
+UtopVariogramCloud(data = NULL)
 
 Utop(
   observations = NULL,
@@ -98,8 +92,11 @@ parameters.}
 
 \item{rs_type, hs_type, clus_type, outfile, wlim_method, uk_trend_support}{Character parameters.}
 
-\item{fit_method, g_dist_est, g_dist_pred, var_clean, max_dist}{Variogram and
-distance parameters.}
+\item{fit_method, g_dist_est, var_clean, max_dist}{Variogram and distance
+parameters.}
+
+\item{g_dist_pred}{Geostatistical distance parameter or computed distance
+object, depending on the class.}
 
 \item{cn_areas}{Number of areas used in cluster-related calculations.}
 
@@ -124,7 +121,7 @@ locations.}
 
 \item{predictions, simulations}{Prediction and simulation results.}
 
-\item{d_obs, d_pred, g_dist_obs, g_dist_pred, g_dist_pred_obs, g_dist_bin, d_bin}{Discretisation and geostatistical distance objects.}
+\item{d_obs, d_pred, g_dist_obs, g_dist_pred_obs, g_dist_bin, d_bin}{Discretisation and geostatistical distance objects.}
 
 \item{overlap_obs, overlap_pred_obs}{Overlap matrices.}
 
