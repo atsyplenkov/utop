@@ -59,6 +59,9 @@ utop_area <- function(object) {
 
 #' @noRd
 utop_add_area <- function(object) {
+  if (is.null(object)) {
+    return(NULL)
+  }
   if (inherits(object, "stars")) {
     return(utop_stars_add_area(object))
   }

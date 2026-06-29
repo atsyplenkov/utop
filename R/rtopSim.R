@@ -70,7 +70,7 @@ rtopSim.rtop <- function(
   varMatPred <- object$varMatPred
   predictions <- utop_add_area(object$predictionLocations)
   observations <- utop_add_area(object$observations)
-  nobs <- nrow(observations)
+  nobs <- if (is.null(observations)) 0L else nrow(observations)
   predictionLocations <- predictions
 
   if (replace && !("replaceNumber" %in% names(predictionLocations))) {
