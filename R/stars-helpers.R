@@ -204,8 +204,3 @@ utop_stars_slice_time <- function(object, time_index) {
     object[,, time_index, drop = FALSE]
   }
 }
-
-#' @noRd
-utop_stars_empty_like <- function(object) {
-  stars::st_as_stars(list(), dimensions = stars::st_dimensions(object))
-}

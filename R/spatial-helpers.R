@@ -50,11 +50,6 @@ utop_add_area <- function(object) {
 }
 
 #' @noRd
-utop_geometry <- function(object) {
-  sf::st_geometry(utop_as_sf(object))
-}
-
-#' @noRd
 utop_bbox <- function(object) {
   if (is.numeric(object) && length(object) == 4) {
     return(object)
@@ -112,14 +107,6 @@ utop_dist_matrix <- function(coords1, coords2 = NULL) {
 }
 
 #' @noRd
-utop_support_size <- function(object) {
-  if (inherits(object, "stars")) {
-    return(utop_stars_nspace(object))
-  }
-  nrow(utop_as_sf(object))
-}
-
-#' @noRd
 utop_data_names <- function(object) {
   if (inherits(object, "stars")) {
     names(object)
@@ -145,10 +132,4 @@ utop_default_formula <- function(object, caller = "formulaString") {
       call. = FALSE
     )
   }
-}
-
-#' @noRd
-utop_clone_with_data <- function(object, data) {
-  object <- utop_as_sf(object)
-  sf::st_sf(data, geometry = sf::st_geometry(object), crs = sf::st_crs(object))
 }
