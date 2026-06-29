@@ -12,18 +12,6 @@ estimateParameters.rtop <- function(object, params = list(), ...) {
   rtopFitVariogram(object, ...)
 }
 
-spatialPredict.rtop <- function(object, params = list(), ...) {
-  if (!inherits(object$params, "rtopParams")) {
-    object$params <- getRtopParams(
-      object$params,
-      newPar = params,
-      formulaString = object$formulaString,
-      observations = object$observations
-    )
-  }
-  rtopKrige(object, ...)
-}
-
 methodParameters.rtop <- function(object, ...) {
   if ("methodParameters" %in% names(object)) {
     methodParameters <- object$methodParameters
