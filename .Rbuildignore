@@ -10,6 +10,7 @@ docs/
 air.toml
 jarl.toml
 AGENTS.md
+justfile
 
 ^.*[.]Rcheck$
 ^.*[.]tar[.]gz$
