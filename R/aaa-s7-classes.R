@@ -98,10 +98,7 @@ UtopVariogramModel <- S7::new_class(
   package = "utop",
   properties = list(
     model = S7::new_property(S7::class_character, default = "Ex1"),
-    params = S7::new_property(
-      S7::class_numeric,
-      default = c(1, 1, 0, 0, 1)
-    ),
+    params = S7::new_property(S7::class_numeric, default = c(1, 1, 0, 0, 1)),
     ss_err = utop_optional(S7::class_numeric),
     criterion = utop_optional()
   )
@@ -347,12 +344,14 @@ utop_from_rtop <- function(x) {
   args <- list(
     params = utop_params_from_list(utop_get(x, "params")),
     variogram = utop_variogram_from_legacy(utop_get(x, "variogram")),
-    variogram_cloud = utop_variogram_cloud_from_legacy(
-      utop_get(x, "variogramCloud")
-    ),
-    variogram_model = utop_variogram_model_from_legacy(
-      utop_get(x, "variogramModel")
-    )
+    variogram_cloud = utop_variogram_cloud_from_legacy(utop_get(
+      x,
+      "variogramCloud"
+    )),
+    variogram_model = utop_variogram_model_from_legacy(utop_get(
+      x,
+      "variogramModel"
+    ))
   )
 
   for (new_name in names(utop_object_names)) {
