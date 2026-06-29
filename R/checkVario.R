@@ -326,11 +326,7 @@ checkVario.rtopVariogramModel <- function(
       unique(c((i1 - 1) * ld + 1, ((i2 - 1) * ld + 1):(i2 * ld))),
     ]
     poly1$obs <- seq_len(nrow(poly1))
-    lobject <- createRtopObject(
-      poly1,
-      params = params,
-      formulaString = obs ~ 1
-    )
+    lobject <- createRtopObject(poly1, params = params, formulaString = obs ~ 1)
     lobject$variogramModel <- variogramModel
     nadists <- adists
     if (i1 != i2) {

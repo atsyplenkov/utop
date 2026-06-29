@@ -74,12 +74,7 @@ findOverlap <- function(areas1, areas2, debug.level = 1, ...) {
     }
     t3 <- proc.time()[[3]]
     if (debug.level > 1) {
-      print(paste(
-        ia,
-        round(sqrt(a1), 2),
-        round(t2 - t1, 3),
-        round(t3 - t2, 3)
-      ))
+      print(paste(ia, round(sqrt(a1), 2), round(t2 - t1, 3), round(t3 - t2, 3)))
     }
   }
   if (debug.level > 1) {
@@ -98,12 +93,7 @@ findVarioOverlap <- function(vario) {
     ad <- sqrt(a1) / 2
     ad[2] <- sqrt(a2) / 2
     if (ad[1] + ad[2] > dist) {
-      bbox1 <- c(
-        xmin = -ad[1],
-        ymin = -ad[1],
-        xmax = ad[1],
-        ymax = ad[1]
-      )
+      bbox1 <- c(xmin = -ad[1], ymin = -ad[1], xmax = ad[1], ymax = ad[1])
       bbox2 <- c(
         xmin = dist - ad[2],
         ymin = -ad[2],

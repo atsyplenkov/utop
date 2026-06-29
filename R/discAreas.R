@@ -245,4 +245,3 @@ rtopDisc.SpatialPolygons <- function(object, ...) {
 rtopDisc.STSDF <- function(object, ...) {
   utop_stop_legacy_sp(object, target = "stars")
 }
-

@@ -18,12 +18,10 @@ rtopKrige.stars <- function(
   cv <- params$cv
   debug.level <- params$debug.level
   if (!cv && !isTRUE(all.equal(is.null(olags), is.null(plags)))) {
-    stop(
-      paste(
-        "Lag times have to be given for both observations and",
-        "predictionLocations, or for none of them"
-      )
-    )
+    stop(paste(
+      "Lag times have to be given for both observations and",
+      "predictionLocations, or for none of them"
+    ))
   }
   if (!missing(varMat) && missing(varMatObs)) {
     if (is.atomic(varMat)) {
@@ -207,7 +205,8 @@ rtopKrige.stars <- function(
           nl <- (nbefore + 1 + ceiling(rolags[jstat])):(nbefore +
             ntime +
             ceiling(rolags[jstat]))
-          obs[jstat, ] <- obsb[jstat, nf] * (1 - rdiff[jstat]) +
+          obs[jstat, ] <- obsb[jstat, nf] *
+            (1 - rdiff[jstat]) +
             obsb[jstat, nl] * rdiff[jstat]
         }
       }

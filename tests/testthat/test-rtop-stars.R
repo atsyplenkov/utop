@@ -86,12 +86,7 @@ test_that("stars kriging supports lagged non-CV and CV paths", {
     fixtures$observations,
     fixtures$prediction_locations,
     formulaString = "obs ~ 1",
-    params = list(
-      rresol = 4,
-      rstype = "regular",
-      debug.level = -1,
-      nmax = 3
-    )
+    params = list(rresol = 4, rstype = "regular", debug.level = -1, nmax = 3)
   )
   rtop_obj$variogramModel <- rtopVariogramModel()
 
@@ -112,6 +107,6 @@ test_that("stars kriging supports lagged non-CV and CV paths", {
   expect_s3_class(cv$predictions, "stars")
   expect_equal(unname(dim(pred$predictions)), c(2, 4))
   expect_equal(unname(dim(cv$predictions)), c(5, 4))
-  expect_true(any(!is.na(pred$predictions[["var1.pred"]])))
-  expect_true(any(!is.na(cv$predictions[["var1.pred"]])))
+  expect_true(!all(is.na(pred$predictions[["var1.pred"]])))
+  expect_true(!all(is.na(cv$predictions[["var1.pred"]])))
 })

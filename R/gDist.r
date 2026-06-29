@@ -63,7 +63,6 @@ gDist.STSDF <- function(object, ...) {
 }
 
 
-
 #' @export
 #' @rdname gDist
 gDist.sf <- function(object, object2 = NULL, ...) {

@@ -41,15 +41,14 @@ varMat.rtop <- function(
     if (
       !identical(attr(object$varMatObs, "variogramModel"), variogramModel) ||
         !nObs == dim(object$varMatObs)[1] ||
-        ("varMatPredObs" %in% names(object) &&
-          (
-            (!is.null(predictionLocations) &&
-              dim(object$varMatPredObs)[2] != dim(predictionLocations)[1]) ||
-              !identical(
-                attr(object$varMatObs, "variogramModel"),
-                variogramModel
-              )
-          ))
+        ("varMatPredObs" %in%
+          names(object) &&
+          ((!is.null(predictionLocations) &&
+            dim(object$varMatPredObs)[2] != dim(predictionLocations)[1]) ||
+            !identical(
+              attr(object$varMatObs, "variogramModel"),
+              variogramModel
+            )))
     ) {
       varMatUpdate <- TRUE
     }
@@ -493,10 +492,11 @@ varMatDefault <- function(
     nuggPredObs <- matrix(
       mapply(
         FUN = nuggEx,
-        (
-          1 / fPredObs + 1 / sPredObs -
-            2 * overlapPredObs / (fPredObs * sPredObs)
-        ) / 2,
+        (1 /
+          fPredObs +
+          1 / sPredObs -
+          2 * overlapPredObs / (fPredObs * sPredObs)) /
+          2,
         MoreArgs = list(variogramModel = variogramModel)
       ),
       ncol = nPred
@@ -602,7 +602,6 @@ varMat.list <- function(
           a2 <- d2[lorder]
         }
 
-
         lmat <- mapply(
           vred,
           a2 = a2,
@@ -634,8 +633,17 @@ varMat.list <- function(
     parallel::clusterExport(
       cl,
       c(
-        "d1", "d2", "coor1", "coor2", "equal", "maxdist", "fun",
-        "debug.level", "utop_point_coordinates", "utop_dists_n1", "vred"
+        "d1",
+        "d2",
+        "coor1",
+        "coor2",
+        "equal",
+        "maxdist",
+        "fun",
+        "debug.level",
+        "utop_point_coordinates",
+        "utop_dists_n1",
+        "vred"
       ),
       envir = environment()
     )

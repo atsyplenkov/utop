@@ -227,11 +227,7 @@ test_that("spatiotemporal universal kriging reproduces an exact trend", {
 
   obs_cov <- utop:::utop_stars_attr_matrix(st_obs, "cov")
   pred_cov <- utop:::utop_stars_attr_matrix(st_pred, "cov")
-  st_exact <- utop:::utop_stars_set_attr_matrix(
-    st_obs,
-    "obs",
-    2 + 3 * obs_cov
-  )
+  st_exact <- utop:::utop_stars_set_attr_matrix(st_obs, "obs", 2 + 3 * obs_cov)
 
   ret <- rtopKrige(
     st_exact,

@@ -264,7 +264,6 @@ rtopFitVariogram.STSDF <- function(object, ...) {
 }
 
 
-
 #' @noRd
 objfunc <- function(
   pars,

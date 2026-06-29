@@ -119,7 +119,6 @@ rtopVariogram.STSDF <- function(object, ...) {
 }
 
 
-
 # Alternative binning:
 #  x <- matrix(rnorm(30000), ncol=3)
 #  breaks <- seq(-1, 1, length=5)
@@ -129,7 +128,6 @@ rtopVariogram.STSDF <- function(object, ...) {
 #  x3=cut(x[, 3], breaks=breaks))
 #  table(complete.cases(xints))
 #  xtabs(~ ., xints)
-
 
 ###############################
 #' @export

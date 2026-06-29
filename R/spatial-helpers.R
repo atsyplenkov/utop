@@ -88,9 +88,9 @@ utop_bbox <- function(object) {
 #' @noRd
 utop_centroid_coordinates <- function(object) {
   object <- utop_as_sf(object)
-  coords <- suppressWarnings(sf::st_coordinates(sf::st_centroid(
-    sf::st_geometry(object)
-  )))
+  coords <- suppressWarnings(sf::st_coordinates(sf::st_centroid(sf::st_geometry(
+    object
+  ))))
   coords[, 1:2, drop = FALSE]
 }
 

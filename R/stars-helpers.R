@@ -201,7 +201,7 @@ utop_stars_slice_time <- function(object, time_index) {
   if (identical(dim_names[1], time_dim)) {
     object[, time_index, drop = FALSE]
   } else {
-    object[, , time_index, drop = FALSE]
+    object[,, time_index, drop = FALSE]
   }
 }
 

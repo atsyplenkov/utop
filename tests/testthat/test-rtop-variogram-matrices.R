@@ -190,9 +190,7 @@ test_that("variogram fitting, discretization, and matrices cover spatial and sf 
   expect_equal(dim(varmat_nugget$varMatPredObs), c(nrow(sp_obs), nrow(sp_pred)))
   expect_equal(dim(varmat_obs_nugget), c(nrow(sp_obs), nrow(sp_obs)))
   expect_true(all(is.finite(varmat_obs_nugget)))
-  expect_true(any(
-    varmat_nugget$varMatPredObs > varmat_no_nugget$varMatPredObs
-  ))
+  expect_true(any(varmat_nugget$varMatPredObs > varmat_no_nugget$varMatPredObs))
 
   expect_identical(varmat_cached$varMatObs, varmat_reuse$varMatObs)
   expect_identical(varmat_cached$varMatPredObs, varmat_reuse$varMatPredObs)
