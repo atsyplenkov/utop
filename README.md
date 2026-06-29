@@ -12,7 +12,7 @@
 
 `utop` is a nextgen fork and continuation of the original [`rtop` package](https://CRAN.R-project.org/package=rtop). It keeps the core top-kriging functionality for interpolation with variable spatial support while modernising the package internals and extending the feature set.
 
-This fork is intended to be rewritten using more modern R tooling, including `mirai` for parallel processing, `S7` for a more explicit object system, and `stars` for spatiotemporal datasets in place of the deprecated `spacetime` package. It also aims to add broader support for universal kriging (hope so!).
+This fork uses modern R tooling, `sf` geometries, and `stars` vector cubes for spatiotemporal datasets. Future work includes `mirai` for parallel processing and `S7` for a more explicit object system.
 
 ## Installation
 
@@ -51,9 +51,9 @@ air format R tests
 
 - [x] Migrate tests to `testthat`
 - [x] Migrate to `roxygen2` documentation
-- [ ] Replace spacetime with stars
+- [x] Replace `spacetime` with `stars`
 - [ ] Add example data with timeseries
-- [ ] Remove data.table and reshape2 deps
+- [x] Remove `sp`, `spacetime`, `data.table`, and `reshape2` deps
 - [ ] Add mirai for parallel processing (?)
 - [x] Add universal kriging support (!!)
 - [ ] Add a proper OOP structure through S7 (?)
