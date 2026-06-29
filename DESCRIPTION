@@ -14,7 +14,8 @@ Imports:
         sf,
         stars,
         units,
-        sceua
+        sceua,
+        S7
 Suggests:
         parallel,
         intamap,
