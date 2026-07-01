@@ -1,8 +1,9 @@
 #' @noRd
 findOverlap <- function(areas1, areas2, debug.level = 1, ...) {
-  params <- getRtopParams(...)
-  olim <- params$olim
-  partialOverlap <- params$partialOverlap
+  dots <- list(...)
+  olim <- if ("olim" %in% names(dots)) dots$olim else 1e-4
+  params <- coerce_utop_params(...)
+  partialOverlap <- params@partial_overlap
 
   areas1 <- utop_add_area(areas1)
   if (missing(areas2)) {
@@ -84,6 +85,24 @@ findOverlap <- function(areas1, areas2, debug.level = 1, ...) {
     diag(overlap) <- iareas
   }
   overlap
+}
+
+
+#' @noRd
+find_overlap <- function(
+  areas1,
+  areas2,
+  partial_overlap = TRUE,
+  debug.level = 1,
+  ...
+) {
+  findOverlap(
+    areas1,
+    areas2,
+    debug.level = debug.level,
+    partialOverlap = partial_overlap,
+    ...
+  )
 }
 
 

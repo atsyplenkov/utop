@@ -1,9 +1,3 @@
-#' @exportS3Method summary rtop
-summary.rtop <- function(object, ...) {
-  summary.default(object, ...)
-}
-
-
 #' @noRd
 adfunc <- function(sampleVariogram, observations, amul) {
   if (is.null(sampleVariogram)) {
@@ -41,7 +35,7 @@ dfunc <- function(sampleVariogram, observations, dmul) {
   if (is.null(sampleVariogram)) {
     dmax <- sqrt(bbArea(utop_bbox(observations))) / 2
     dmin <- min(stats::dist(utop_centroid_coordinates(observations)))
-  } else if (is(sampleVariogram, "rtopVariogramCloud")) {
+  } else if (variogram_is_cloud(sampleVariogram)) {
     dmax <- max(sampleVariogram$dist)
     dmin <- min(sampleVariogram$dist)
   } else {

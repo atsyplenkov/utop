@@ -1,12 +1,11 @@
-#' @export
-#' @rdname rtopKrige
-rtopKrige.stars <- function(
+#' @noRd
+compute_krige_stars <- function(
   object,
   predictionLocations = NULL,
   varMatObs,
   varMatPredObs,
   varMat,
-  params = list(),
+  params = NULL,
   formulaString,
   sel,
   olags = NULL,
@@ -14,9 +13,10 @@ rtopKrige.stars <- function(
   lagExact = TRUE,
   ...
 ) {
-  params <- getRtopParams(params, ...)
-  cv <- params$cv
-  debug.level <- params$debug.level
+  dots <- list(...)
+  params <- do.call(coerce_utop_params, c(list(params = params), dots))
+  cv <- params@cv
+  debug.level <- params@debug_level
   if (!cv && !isTRUE(all.equal(is.null(olags), is.null(plags)))) {
     stop(paste(
       "Lag times have to be given for both observations and",
@@ -88,7 +88,7 @@ rtopKrige.stars <- function(
   if (is.null(olags) && !anyNA(obs)) {
     obs_first <- obs_support
     obs_first[[depVar]] <- obs[, 1]
-    ret <- rtopKrige.default(
+    ret <- compute_krige(
       obs_first,
       pred_support,
       varMatObs,
@@ -136,7 +136,7 @@ rtopKrige.stars <- function(
         } else {
           varMatPredObs[newind, , drop = FALSE]
         }
-        ret <- rtopKrige.default(
+        ret <- compute_krige(
           object = ppq,
           predictionLocations = if (cv) NULL else pred_support,
           varMatObs = vmat,
@@ -226,8 +226,8 @@ rtopKrige.stars <- function(
         if (cv) {
           newind <- newind[!newind %in% istat]
         }
-        if (is.numeric(params$nmax) && length(newind) > params$nmax) {
-          newind <- newind[seq_len(params$nmax)]
+        if (is.numeric(params@n_max) && length(newind) > params@n_max) {
+          newind <- newind[seq_len(params@n_max)]
         }
         if (length(newind) == 0) {
           next
@@ -242,7 +242,7 @@ rtopKrige.stars <- function(
           } else {
             varMatPredObs[newind, istat, drop = FALSE]
           }
-          ret <- rtopKrige.default(
+          ret <- compute_krige(
             object = ppq,
             ppred,
             varMatObs = vmat,

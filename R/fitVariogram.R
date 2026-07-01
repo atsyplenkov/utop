@@ -1,250 +1,3 @@
-#' @export
-#' @rdname rtopFitVariogram
-rtopFitVariogram.rtop <- function(object, params = list(), iprint = 0, ...) {
-  params <- getRtopParams(object$params, newPar = params, ...)
-  if (
-    params$cloud &&
-      !"variogramCloud" %in% names(object) ||
-      !params$cloud && !"variogram" %in% names(object)
-  ) {
-    object <- rtopVariogram(object, ...)
-  }
-
-  if (params$nugget && !"overlapObs" %in% names(object)) {
-    object$overlapObs <- findOverlap(
-      object$observations,
-      object$observations,
-      partialOverlap = TRUE
-    )
-  }
-  if (params$cloud) {
-    vario <- object$variogramCloud
-    observations <- object$observations
-    if (params$gDistEst && "gDistObs" %in% names(object)) {
-      dists <- object$gDistObs
-    } else if ("dObs" %in% names(object)) {
-      dists <- object$dObs
-    } else {
-      dists <- NULL
-    }
-    if (params$nugget) aOver <- object$overlapObs else aOver <- NULL
-  } else {
-    vario <- object$variogram
-    observations <- NULL
-    if (params$gDistEst && "gDistBin" %in% names(object)) {
-      dists <- object$gDistBin
-    } else if ("dBin" %in% names(object)) {
-      dists <- object$dBin
-    } else {
-      dists <- NULL
-    }
-    if (params$nugget) aOver <- findVarioOverlap(vario) else aOver <- NULL
-  }
-  varioFit <- rtopFitVariogram(
-    object = vario,
-    observations = observations,
-    dists = dists,
-    aOver = aOver,
-    params = params,
-    mr = TRUE,
-    iprint = iprint,
-    ...
-  )
-  object$variogramModel <- varioFit$variogramModel
-  object$varFit <- varioFit$varFit
-  varioFit <- varioFit[-which(names(varioFit) == "variogramModel")]
-  varioFit <- varioFit[-which(names(varioFit) == "varFit")]
-  # Adding gdist or discretized areas if created
-  object <- modifyList(object, varioFit)
-  object
-}
-
-# Dists can be
-# dObs
-# dsBin
-
-#' @export
-#' @rdname rtopFitVariogram
-rtopFitVariogram.rtopVariogram <- function(
-  object,
-  observations,
-  dists = NULL,
-  params = list(),
-  mr = FALSE,
-  aOver = NULL,
-  iprint = 0,
-  ...
-) {
-  vario <- object
-  obj <- list()
-  if (!inherits(params, "rtopParams")) {
-    params <- getRtopParams(params, ...)
-  }
-  obj$params <- params
-  if (is.null(dists)) {
-    obj$dBin <- dists <- rtopDisc(object, params = params)
-  }
-  if (params$gDistEst && !is.matrix(dists)) {
-    dists <- gDist(dists, params = params)
-    obj$gDistBin <- dists
-  }
-  if (params$nugget && is.null(aOver)) {
-    aOver <- findVarioOverlap(vario)
-  }
-
-  if (params$model == "Ex1") {
-    implicit <- function(pars) (2 * pars[4] + pars[5]) > 1
-  } else {
-    implicit <- NULL
-  }
-  scres <- sceua::sceua(
-    objfunc,
-    params$parInit[, 3],
-    lower = params$parInit[, 1],
-    upper = params$parInit[, 2],
-    varioIn = object,
-    dists = dists,
-    aOver = aOver,
-    gDistEst = params$gDistEst,
-    model = params$model,
-    resol = params$hresol,
-    fit.method = params$fit.method,
-    implicit = implicit,
-    iprint = iprint,
-    ...
-  )
-  bestPar <- scres$par
-  fit <- scres$value
-  vf <- objfunc(
-    bestPar,
-    varioIn = vario,
-    dists = dists,
-    aOver = aOver,
-    gDistEst = params$gDistEst,
-    last = TRUE,
-    model = params$model,
-    resol = params$hresol,
-    ...
-  )
-  varFit <- vf$varFit
-  errSum <- vf$errSum
-
-  variogramModel <- list(model = params$model, params = bestPar)
-  class(variogramModel) <- "rtopVariogramModel"
-  attr(variogramModel, "SSErr") <- errSum
-  attr(variogramModel, "criterion") <- fit
-  if (!params$nugget) {
-    variogramModel$params[3] <- 0
-  }
-  if (mr) {
-    # Here adding to the object created further up
-    obj$variogramModel <- variogramModel
-    obj$varFit <- varFit
-    obj
-  } else {
-    list(variogramModel = variogramModel, varFit = varFit)
-  }
-}
-
-# Dists can be
-# gDists
-# discAreas
-
-#' @export
-#' @rdname rtopFitVariogram
-rtopFitVariogram.rtopVariogramCloud <- function(
-  object,
-  observations,
-  dists = NULL,
-  aOver = NULL,
-  params = list(),
-  mr = FALSE,
-  iprint = 0,
-  ...
-) {
-  vario <- object
-  obj <- list()
-  if (!inherits(params, "rtopParams")) {
-    params <- getRtopParams(params, ...)
-  }
-  obj$params <- params
-  if (is.null(dists)) {
-    dists <- rtopDisc(observations, params = params, ...)
-    obj$dObs <- dists
-  }
-  if (params$gDistEst && is.list(dists)) {
-    dists <- gDist(dists, params = params, ...)
-    obj$gDistObs <- dists
-  }
-
-  if (params$model == "Ex1") {
-    implicit <- function(pars) (2 * pars[4] + pars[5]) > 1
-  } else {
-    implicit <- NULL
-  }
-  scres <- sceua::sceua(
-    objfunc,
-    params$parInit[, 3],
-    lower = params$parInit[, 1],
-    upper = params$parInit[, 2],
-    varioIn = vario,
-    dists = dists,
-    aOver = aOver,
-    gDist = params$gDistEst,
-    model = params$model,
-    fit.method = params$fit.method,
-    debug.level = params$debug.level,
-    iprint = iprint,
-    ...
-  )
-  bestPar <- scres$par
-  vf <- objfunc(
-    bestPar,
-    varioIn = vario,
-    dists = dists,
-    aOver = aOver,
-    gDistEst = params$gDistEst,
-    last = TRUE,
-    model = params$model,
-    debug.level = params$debug.level,
-    ...
-  )
-  varFit <- vf$varFit
-  errSum <- vf$errSum
-  variogramModel <- list(model = params$model, params = bestPar)
-  class(variogramModel) <- "rtopVariogramModel"
-  attr(variogramModel, "SSErr") <- errSum
-  if (mr) {
-    obj$variogramModel <- variogramModel
-    obj$varFit <- varFit
-    obj
-  } else {
-    list(variogramModel, varFit = varFit)
-  }
-}
-
-# There is nothing class dependent in any of these functions, this is handled
-# in rtopVariogram
-#' @export
-#' @rdname rtopFitVariogram
-rtopFitVariogram.sf <- function(object, params = list(), ...) {
-  if (!inherits(params, "rtopParams")) {
-    params <- getRtopParams(params, ...)
-  }
-  vario <- rtopVariogram(object, params = params, ...)
-  rtopFitVariogram(vario = vario, observations = object, params = params, ...)
-}
-
-#' @export
-#' @rdname rtopFitVariogram
-rtopFitVariogram.stars <- function(object, params = list(), ...) {
-  if (!inherits(params, "rtopParams")) {
-    params <- getRtopParams(params, ...)
-  }
-  vario <- rtopVariogram(object, params = params, ...)
-  rtopFitVariogram(vario = vario, observations = object, params = params, ...)
-}
-
 #' @noRd
 objfunc <- function(
   pars,
@@ -260,6 +13,7 @@ objfunc <- function(
   resol = 5,
   nd = 100,
   last = FALSE,
+  cloud = NULL,
   ...
 ) {
   # Debug = 0 means no output
@@ -277,6 +31,9 @@ objfunc <- function(
   igamma <- which(names(varioIn) == "gamma")
   ia1 <- which(names(varioIn) == "a1")
   ia2 <- which(names(varioIn) == "a2")
+  if (is.null(cloud)) {
+    cloud <- variogram_is_cloud(varioIn)
+  }
   if (gDistEst) {
     #dists is here the n*n matrix gDistObs
     if (dim(dists)[1] == dim(dists)[2]) {
@@ -363,7 +120,7 @@ objfunc <- function(
     }
   } else {
     # dists is here dObs
-    if (inherits(varioIn, "rtopVariogramCloud")) {
+    if (cloud) {
       ar1 <- mapply(
         FUN = function(i, dObs) dObs[[i]],
         vario[, iacl1],
@@ -480,12 +237,16 @@ goFit <- function(gobs, gest, dist, np, fit.method = 8) {
 
 #' @noRd
 varioEx <- function(skor, variogramModel) {
-  model <- variogramModel$model
-  params <- variogramModel$params
+  if (S7::S7_inherits(variogramModel, UtopVariogramModel)) {
+    model <- variogramModel@model
+    params <- variogramModel@params
+  } else {
+    model <- variogramModel$model
+    params <- variogramModel$params
+  }
   res <- 0.
   imod <- imodel(model)
   vres <- .Fortran("varioex", res, skor, length(params), params, imod)
-  #  print(paste(res,vres[[1]],params[1],params[2],params[3],params[4],params[5], sep = " " ))
   return(vres[[1]])
 }
 
@@ -507,10 +268,10 @@ imodel <- function(model) {
 
 #' @noRd
 nuggEx <- function(ared, variogramModel) {
-  model <- variogramModel$model
-  params <- variogramModel$params
-  res <- 0.
-
-  #  vres = .Fortran("nuggex",res,length(params),params,model)
+  if (S7::S7_inherits(variogramModel, UtopVariogramModel)) {
+    params <- variogramModel@params
+  } else {
+    params <- variogramModel$params
+  }
   return(params[3] * ared)
 }
