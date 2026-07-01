@@ -2,9 +2,8 @@
 # Universal top-kriging MAF application using the local utop development
 # package and altitude as a covariate.
 #
-# This follows demo_rtop.R, but loads the package source with
-# devtools::load_all("..") and invokes universal top-kriging with a non-trivial
-# right-hand side in formulaString: obs ~ Altitude. Altitude is available on the
+# This follows demo_rtop.R, but uses universal top-kriging with a non-trivial
+# right-hand side in formula: obs ~ Altitude. Altitude is available on the
 # gauged catchment layer. The ungauged catchment layer has no altitude field, so
 # this standalone demo assigns each target the nearest gauged-station altitude.
 # For production use, replace this placeholder with outlet altitude,
@@ -81,42 +80,42 @@ set.seed(1)
 vic <- 6
 GaugedCatchments$obs <- GaugedCatchments$MAF / (GaugedCatchments$Area_km2^c2)
 
-rtop_params <- list(
-  gDist = TRUE,
-  rresol = 500,
-  nmax = vic,
+utop_params <- list(
+  g_dist_est = TRUE,
+  g_dist_pred = TRUE,
+  r_resol = 500,
+  n_max = vic,
   wlim = 1,
-  debug.level = 0,
-  partialOverlap = TRUE
+  debug_level = 0,
+  partial_overlap = TRUE
 )
 
-rtopObj.MAF <- createRtopObject(
+utop_obj_maf <- utop_object(
   observations = GaugedCatchments,
-  predictionLocations = UngaugedCatchments,
-  formulaString = obs ~ Altitude,
-  params = rtop_params
+  prediction_locations = UngaugedCatchments,
+  formula = obs ~ Altitude,
+  params = utop_params
 )
 
 set.seed(21)
-rtopObj.MAF <- rtopVariogram(rtopObj.MAF)
-rtopObj.MAF <- rtopFitVariogram(rtopObj.MAF)
-rtopObj.MAF <- checkVario(rtopObj.MAF)
-rtopObj.MAF <- rtopKrige(rtopObj.MAF)
+utop_obj_maf <- utop_variogram(utop_obj_maf)
+utop_obj_maf <- utop_fit_variogram(utop_obj_maf)
+utop_obj_maf <- utop_krige(utop_obj_maf)
 
 ungauged_maf <- st_drop_geometry(UngaugedCatchments) |>
   transmute(
     Locatin,
     Altitude,
-    MAF_pred = rtopObj.MAF$predictions$var1.pred * (Are_km2^c2)
+    MAF_pred = utop_obj_maf@predictions$var1.pred * (Are_km2^c2)
   )
 
 print(ungauged_maf)
 
-# Leave-one-out CV on MAF for gauged stations. rtopKrige(..., cv = TRUE)
+# Leave-one-out CV on MAF for gauged stations. utop_krige(..., cv = TRUE)
 # returns leave-one-out predictions for obs; convert back to dimensional MAF
 # using the same area scaling as above.
-rtopObj.MAF.cv <- rtopKrige(rtopObj.MAF, cv = TRUE)
-cv_pred_obs <- rtopObj.MAF.cv$predictions$var1.pred
+utop_obj_maf_cv <- utop_krige(utop_obj_maf, cv = TRUE)
+cv_pred_obs <- utop_obj_maf_cv@predictions$var1.pred
 
 gauged_cv <- st_drop_geometry(GaugedCatchments) |>
   transmute(

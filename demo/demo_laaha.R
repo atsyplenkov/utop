@@ -23,14 +23,14 @@
 # This is distinct from demo_utk.R, which estimates drift and kriging weights
 # together in a unified augmented kriging system (proper universal kriging).
 #
-# Uses utop loaded with devtools::load_all(".."). The intercept-only formula
-# resid ~ 1 invokes ordinary top-kriging on the drift residuals.
+# Uses the public utop S7 API. The intercept-only formula `resid ~ 1` invokes
+# ordinary top-kriging on the drift residuals.
 #
 # This file reads demo.gpkg created by demo_prep.R. Predicted/CV MAF values are
 # kept in memory and are not written back to the GeoPackage.
 
 library(sf)
-devtools::load_all("..", quiet = TRUE)
+library(utop)
 library(yardstick)
 library(tidyhydro)
 library(dplyr)
@@ -114,7 +114,7 @@ GaugedCatchments$resid <- residuals(drift_model)
 set.seed(1)
 vic <- 6
 
-rtop_params <- list(
+utop_params <- list(
   gDist = TRUE,
   rresol = 500,
   nmax = vic,
@@ -123,20 +123,19 @@ rtop_params <- list(
   partialOverlap = TRUE
 )
 
-rtopObj.resid <- createRtopObject(
+utop_obj_resid <- utop_object(
   observations = GaugedCatchments,
-  predictionLocations = UngaugedCatchments,
-  formulaString = resid ~ 1,
-  params = rtop_params
+  prediction_locations = UngaugedCatchments,
+  formula = resid ~ 1,
+  params = utop_params
 )
-rtopObj.resid <- rtopVariogram(rtopObj.resid)
-rtopObj.resid <- rtopFitVariogram(rtopObj.resid)
-rtopObj.resid <- checkVario(rtopObj.resid)
-rtopObj.resid <- rtopKrige(rtopObj.resid)
+utop_obj_resid <- utop_variogram(utop_obj_resid)
+utop_obj_resid <- utop_fit_variogram(utop_obj_resid)
+utop_obj_resid <- utop_krige(utop_obj_resid)
 
 # Step 4: Predict the drift at ungauged locations and superimpose.
 ungauged_drift <- predict(drift_model, newdata = UngaugedCatchments)
-ungauged_resid_kriged <- rtopObj.resid$predictions$var1.pred
+ungauged_resid_kriged <- utop_obj_resid@predictions$var1.pred
 ungauged_obs_pred <- ungauged_drift + ungauged_resid_kriged
 
 # Step 5: Rescale to dimensional MAF.
@@ -156,13 +155,13 @@ print(ungauged_maf)
 #    for prediction at that location."
 #
 # This demo simplifies the CV by fitting the regression once on all data and
-# then using rtopKrige(cv = TRUE) for the residual kriging step. The drift
+# then using utop_krige(cv = TRUE) for the residual kriging step. The drift
 # component is therefore slightly optimistic (fitted value includes the
 # left-out point). A production CV should re-fit the regression in each
 # LOO fold.  The simplification is flagged here, not hidden.
 # ------------------------------------------------------------------------
-rtopObj.resid.cv <- rtopKrige(rtopObj.resid, cv = TRUE)
-cv_resid <- rtopObj.resid.cv$predictions$var1.pred
+utop_obj_resid_cv <- utop_krige(utop_obj_resid, cv = TRUE)
+cv_resid <- utop_obj_resid_cv@predictions$var1.pred
 
 # Superimpose: cv prediction = drift (full-data) + cv-kriged residual.
 cv_obs_pred <- GaugedCatchments$drift + cv_resid

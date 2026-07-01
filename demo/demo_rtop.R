@@ -7,7 +7,7 @@
 # kept in memory and are not written back to the GeoPackage.
 
 library(sf)
-library(rtop)
+library(utop)
 library(yardstick)
 library(tidyhydro)
 library(dplyr)
@@ -60,39 +60,39 @@ set.seed(1)
 vic <- 6
 GaugedCatchments$obs <- GaugedCatchments$MAF / (GaugedCatchments$Area_km2^c2)
 
-rtop_params <- list(
-  gDist = TRUE,
-  rresol = 500,
-  nmax = vic,
+utop_params <- list(
+  g_dist_est = TRUE,
+  g_dist_pred = TRUE,
+  r_resol = 500,
+  n_max = vic,
   wlim = 1,
-  debug.level = 0,
-  partialOverlap = TRUE
+  debug_level = 0,
+  partial_overlap = TRUE
 )
 
-rtopObj.MAF <- createRtopObject(
+utop_obj_maf <- utop_object(
   observations = GaugedCatchments,
-  predictionLocations = UngaugedCatchments,
-  formulaString = obs ~ 1,
-  params = rtop_params
+  prediction_locations = UngaugedCatchments,
+  formula = obs ~ 1,
+  params = utop_params
 )
-rtopObj.MAF <- rtopVariogram(rtopObj.MAF)
-rtopObj.MAF <- rtopFitVariogram(rtopObj.MAF)
-rtopObj.MAF <- checkVario(rtopObj.MAF)
-rtopObj.MAF <- rtopKrige(rtopObj.MAF)
+utop_obj_maf <- utop_variogram(utop_obj_maf)
+utop_obj_maf <- utop_fit_variogram(utop_obj_maf)
+utop_obj_maf <- utop_krige(utop_obj_maf)
 
 ungauged_maf <- st_drop_geometry(UngaugedCatchments) |>
   transmute(
     Locatin,
-    MAF_pred = rtopObj.MAF$predictions$var1.pred * (Are_km2^c2)
+    MAF_pred = utop_obj_maf@predictions$var1.pred * (Are_km2^c2)
   )
 
 print(ungauged_maf)
 
 # Requested deviation from the tutorial: leave-one-out CV on MAF for gauged stations.
-# rtopKrige(..., cv = TRUE) returns leave-one-out predictions for obs; convert back
-# to dimensional MAF using the same area scaling as above.
-rtopObj.MAF.cv <- rtopKrige(rtopObj.MAF, cv = TRUE)
-cv_pred_obs <- rtopObj.MAF.cv$predictions$var1.pred
+# utop_krige(..., cv = TRUE) returns leave-one-out predictions for obs; convert
+# back to dimensional MAF using the same area scaling as above.
+utop_obj_maf_cv <- utop_krige(utop_obj_maf, cv = TRUE)
+cv_pred_obs <- utop_obj_maf_cv@predictions$var1.pred
 
 gauged_cv <- st_drop_geometry(GaugedCatchments) |>
   transmute(

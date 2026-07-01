@@ -19,7 +19,7 @@ Runs MAF top-kriging using [`rtop`](https://cran.r-project.org/package=rtop). Th
 
 ### `demo_utk.R`
 
-Runs universal top-kriging using the local `utop` development package loaded with `devtools::load_all("..")`, with altitude as an external drift term:
+Runs universal top-kriging with the public `utop` S7 API and altitude as an external drift term:
 
 ```r
 obs ~ Altitude
@@ -59,9 +59,9 @@ Runs the two-step regression kriging approach of Laaha et al. (2013) — **not**
 4. Superimpose: `predicted_obs = drift + kriged_residual`.
 5. Rescale by target `Area^c2` to get dimensional MAF.
 
-Uses the local `utop` development package (`devtools::load_all("..")`) for the top-kriging step with `formulaString = resid ~ 1`. The drift and kriging weights are estimated **separately** — the regression first, then the residual variogram and kriging. In `demo_utk.R`, by contrast, the trend and kriging weights are solved **together** in a single augmented system.
+Uses the public `utop` S7 API for the top-kriging step with `formula = resid ~ 1`. The drift and kriging weights are estimated **separately** — the regression first, then the residual variogram and kriging. In `demo_utk.R`, by contrast, the trend and kriging weights are solved **together** in a single augmented system.
 
-**CV simplification note.** Laaha et al. (2013, Section 3.5) re-fit the regression for each left-out point. This demo fits the regression once on all data and then uses `rtopKrige(cv = TRUE)` on the residuals. The drift component in CV is therefore slightly optimistic. A production comparison should re-fit the regression in each LOO fold; the simplification is documented, not hidden.
+**CV simplification note.** Laaha et al. (2013, Section 3.5) re-fit the regression for each left-out point. This demo fits the regression once on all data and then uses `utop_krige(cv = TRUE)` on the residuals. The drift component in CV is therefore slightly optimistic. A production comparison should re-fit the regression in each LOO fold; the simplification is documented, not hidden.
 
 ## Leave-one-out CV comparison on gauged MAF
 
