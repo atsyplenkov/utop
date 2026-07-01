@@ -27,7 +27,7 @@
 #' predictionLocations.
 #' @author Jon Olav Skoien
 #' @keywords spatial
-#' @export
+#' @noRd
 readAreaInfo <- function(
   fname = "ainfo.txt",
   id = "id",
@@ -119,7 +119,7 @@ readAreaInfo <- function(
 #' \code{object}.
 #' @author Jon Olav Skoien
 #' @keywords spatial
-#' @export
+#' @noRd
 readAreas <- function(object, adir = ".", ftype = "xy", projection = NA, ...) {
   # ainfo is 1 - ainfo e.g. read by readAreaInfo
   #          2 - name of the file to pass to readAreaInfo. ainfo is in that case delivered as a top level data.frame
