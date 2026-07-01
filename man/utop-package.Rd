@@ -21,67 +21,55 @@ prediction of a process at a series of locations where observations have not
 been made. The example below shows a regionalization of mean annual runoff
 in Austria.
 
-Although it is possible to perform each step with all necessary arguments,
-the easiest interface to the method is to store all variables (such as
-observations, prediction locations and parameters) in an rtop-object, which
-is created by a call to \code{\link{createRtopObject}}. The element
-\code{params} below consists of changes to the default parameters. A further
-description can be found in \code{\link{getRtopParams}}. The changes below
-means that the functions will use geostatistical distance instead of full
-regularization, and that the variogram model will be fitted to the variogram
-cloud. Most other functions in the \code{utop}-package can take this
-object as an argument, and will add the results as one or more new
-element(s) to this object.
+The easiest interface stores all variables, such as observations, prediction
+locations, and parameters, in a \link{Utop} object created with
+\code{\link[=utop_object]{utop_object()}}. The \code{params} object below changes the default parameters so
+that the functions use geostatistical distance instead of full
+regularization and fit the variogram model to the variogram cloud. Most
+user-facing functions take a \code{Utop} object and return an updated object.
 
 The data in the example below are stored as shape-files in the
 extdata-directory of the utop-package, use the directory of your own data
 instead. The observations consist of mean summer runoff from 138 catchments
-in Upper Austria. The predictionLocations are 863 catchments in the same
-region. observations and predictionLocations should be stored as
+in Upper Austria. The prediction locations are 863 catchments in the same
+region. Observations and prediction locations should be stored as
 \code{\link[sf]{sf}} polygons. Spatiotemporal data are represented as
 vector data cubes with \code{stars}.
 
-\preformatted{ rpath = system.file("extdata",package="utop") library(sf)
-observations = st_read(rpath, "observations") predictionLocations =
-st_read(rpath,"predictionLocations")
+\preformatted{
+rpath = system.file("extdata", package = "utop")
+library(sf)
+observations = st_read(rpath, "observations")
+prediction_locations = st_read(rpath, "predictionLocations")
 
-# Create a column with the specific runoff: observations$obs =
-observations$QSUMMER_OB/observations$AREASQKM params = list(gDist = TRUE,
-cloud = TRUE) rtopObj = createRtopObject(observations, predictionLocations,
-params = params) }
+observations$obs = observations$QSUMMER_OB / observations$AREASQKM
+params = list(g_dist_est = TRUE, g_dist_pred = TRUE, cloud = TRUE)
+utop_obj = utop_object(observations, prediction_locations, params = params)
+}
 
-There are help-methods available in cases when data are not available as
-shape-files, or when the observations are not part of the shape-files. See
-\code{\link{readAreaInfo}} and \code{\link{readAreas}}.
+The sample variogram can be added with \code{\link[=utop_variogram]{utop_variogram()}}, and a variogram
+model can be fitted with \code{\link[=utop_fit_variogram]{utop_fit_variogram()}}. The fitting function calls
+\code{\link[=utop_variogram]{utop_variogram()}} when the object does not already contain a sample
+variogram.
 
-A call to \code{\link{rtopVariogram}} adds the sample variogram to the
-object, whereas \cr \code{\link{rtopFitVariogram}} fits a variogram model.
-The last function will call \code{\link{rtopVariogram}} if \code{rtopObj}
-does not contain a sample variogram.
+\preformatted{
+utop_obj = utop_variogram(utop_obj)
+utop_obj = utop_fit_variogram(utop_obj, maxn = 2000)
+}
 
-\preformatted{ rtopObj = rtopVariogram(rtopObj) rtopObj =
-rtopFitVariogram(rtopObj, maxn = 2000) }
+The interpolation function \code{\link[=utop_krige]{utop_krige()}} solves the kriging system based on
+the computed regularized semivariances. Cross-validation can be called with
+the argument \code{cv = TRUE}, either in \code{params} or in the call to
+\code{\link[=utop_krige]{utop_krige()}}.
 
-The function \code{\link{checkVario}} is useful to produce some diagnostic
-plots for the sample variogram and the fitted variogram model.
-
-\preformatted{ checkVario(rtopObj) }
-
-The interpolation function (\code{\link{rtopKrige}}) solves the kriging
-system based on the computed regularized semivariances. The covariance
-matrices are created in a separate regularization function
-(\code{\link{varMat}}), and are stored in the rtop-object for easier access
-if it is necessary to redo parts of the analysis, as this is the
-computationally expensive part of the interpolation. Cross-validation can be
-called with the argument \code{cv=TRUE}, either in \code{params} or in the
-call to \code{\link{rtopKrige}}.
-
-\preformatted{ rtopObj = rtopKrige(rtopObj)
+\preformatted{
+utop_obj = utop_krige(utop_obj)
 # plot predictions with sf/ggplot2
-ggplot(rtopObj$predictions) + aes(fill = var1.pred) + geom_sf()
+ggplot(utop_obj@predictions) + aes(fill = var1.pred) + geom_sf()
 
-rtopObj = rtopKrige(rtopObj, cv = TRUE)
-ggplot(rtopObj$predictions) + aes(fill = var1.var) + geom_sf() }
+utop_obj = utop_krige(utop_obj, cv = TRUE)
+ggplot(utop_obj@predictions) + aes(fill = var1.var) + geom_sf()
+}
 }
 
 \references{

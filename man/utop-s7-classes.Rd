@@ -47,15 +47,15 @@ UtopVariogramModel(
   criterion = NULL
 )
 
-UtopVariogram(data = NULL)
+UtopVariogram(data = data.frame())
 
-UtopVariogramCloud(data = NULL)
+UtopVariogramCloud(data = data.frame())
 
 Utop(
   observations = NULL,
   prediction_locations = NULL,
   formula = NULL,
-  params = NULL,
+  params = UtopParams(),
   variogram = NULL,
   variogram_cloud = NULL,
   variogram_model = NULL,
