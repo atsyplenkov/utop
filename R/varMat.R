@@ -1,327 +1,5 @@
-# varMat.rtop hardly uses the functions further below, should be shortened
-
-#' @export
-#' @rdname varMat
-varMat.rtop <- function(
-  object,
-  varMatUpdate = FALSE,
-  fullPred = FALSE,
-  params = list(),
-  ...
-) {
-  params <- getRtopParams(object$params, newPar = params, ...)
-  observations <- if (inherits(object$observations, "stars")) {
-    utop_stars_support(object$observations)
-  } else {
-    utop_as_sf(object$observations)
-  }
-  nObs <- nrow(observations)
-  predictionLocations <- if ("predictionLocations" %in% names(object)) {
-    if (inherits(object$predictionLocations, "stars")) {
-      utop_stars_support(object$predictionLocations)
-    } else {
-      utop_as_sf(object$predictionLocations)
-    }
-  } else {
-    NULL
-  }
-  variogramModel <- object$variogramModel
-  lgDistPred <- params$gDistPred
-  maxDist <- params$maxDist
-  dots <- list(...)
-  if ("debug.level" %in% names(dots)) {
-    debug.level <- dots$debug.level
-  } else {
-    debug.level <- params$debug.level
-  }
-  aObs <- utop_area(observations)
-  obsComp <- FALSE
-  predComp <- FALSE
-  if ("varMatObs" %in% names(object) && !varMatUpdate) {
-    if (
-      !identical(attr(object$varMatObs, "variogramModel"), variogramModel) ||
-        !nObs == dim(object$varMatObs)[1] ||
-        ("varMatPredObs" %in%
-          names(object) &&
-          ((!is.null(predictionLocations) &&
-            dim(object$varMatPredObs)[2] != dim(predictionLocations)[1]) ||
-            !identical(
-              attr(object$varMatObs, "variogramModel"),
-              variogramModel
-            )))
-    ) {
-      varMatUpdate <- TRUE
-    }
-  }
-  if (params$cv && "varMatObs" %in% names(object) && !varMatUpdate) {
-    return(object)
-  }
-  if (!"varMatObs" %in% names(object) || varMatUpdate) {
-    if (
-      !"dObs" %in% names(object) &&
-        !(lgDistPred && "gDistObs" %in% names(object))
-    ) {
-      object$dObs <- rtopDisc(observations, params = params)
-    }
-    if (lgDistPred) {
-      if ("gDistObs" %in% names(object)) {
-        gDistObs <- object$gDistObs
-      } else {
-        dObs <- object$dObs
-        object$gDistObs <- gDistObs <- gDist(dObs, params = params)
-      }
-      if (
-        !is.null(params$nclus) &&
-          params$nclus > 1 &&
-          nObs > params$cnAreas &&
-          requireNamespace("parallel")
-      ) {
-        cl <- rtopCluster(
-          params$nclus,
-          type = params$clusType,
-          outfile = params$outfile
-        )
-        varMatObs <- matrix(
-          unlist(parallel::parLapply(
-            cl,
-            1:nObs,
-            fun = function(x, gDistObs, variogramModel) {
-              mapply(gDistObs[, x], FUN = function(y) {
-                varioEx(y, variogramModel)
-              })
-            },
-            gDistObs = gDistObs,
-            variogramModel = variogramModel
-          )),
-          nrow = nObs,
-          ncol = nObs
-        )
-      } else {
-        varMatObs <- matrix(
-          mapply(gDistObs, FUN = varioEx, MoreArgs = list(variogramModel)),
-          nrow = nObs,
-          ncol = nObs
-        )
-      }
-      vDiagObs <- diag(varMatObs)
-      for (ia in 1:(nObs - 1)) {
-        for (ib in (ia + 1):nObs) {
-          varMatObs[ia, ib] <- varMatObs[ia, ib] -
-            0.5 * (vDiagObs[ia] + vDiagObs[ib])
-          varMatObs[ib, ia] <- varMatObs[ia, ib]
-        }
-      }
-      object$varMatObs <- varMatObs
-    } else {
-      if ("dObs" %in% names(object)) {
-        dObs <- object$dObs
-      }
-      object$varMatObs <- varMat(
-        dObs,
-        coor1 = utop_centroid_coordinates(observations),
-        variogramModel = variogramModel,
-        debug.level = debug.level,
-        newPar = params
-      )
-    }
-    attr(object$varMatObs, "variogramModel") <- variogramModel
-    obsComp <- TRUE
-  }
-  if (
-    !params$cv &&
-      "predictionLocations" %in% names(object) &&
-      (!"varMatPredObs" %in% names(object) | varMatUpdate)
-  ) {
-    varMatObs <- object$varMatObs
-    vDiagObs <- diag(varMatObs)
-    if (!is.null(dim(predictionLocations))) {
-      nPred <- dim(predictionLocations)[1]
-    } else {
-      nPred <- length(predictionLocations)
-    }
-    if (
-      !"dPred" %in% names(object) &&
-        !(lgDistPred && "gDistPred" %in% names(object))
-    ) {
-      object$dPred <- rtopDisc(predictionLocations, params = params)
-    }
-    if (
-      !lgDistPred ||
-        !all(
-          "gDistPredObs" %in% names(object) && "gDistPred" %in% names(object)
-        )
-    ) {
-      dObs <- object$dObs
-      dPred <- object$dPred
-    }
-    if (lgDistPred) {
-      if ("gDistPred" %in% names(object)) {
-        gDistPred <- object$gDistPred
-      } else {
-        # FIXME:
-        object$gDistPred <- gDistPred <- gDist(
-          dPred,
-          diag = !fullPred,
-          params = params
-        )
-      }
-      if ("gDistPredObs" %in% names(object)) {
-        gDistPredObs <- object$gDistPredObs
-      } else {
-        # FIXME:
-        object$gDistPredObs <- gDistPredObs <- gDist(
-          dObs,
-          dPred,
-          params = params
-        )
-      }
-
-      print("Creating prediction semivariance matrix. This can take some time.")
-      # FIXME:
-      # ugly construction
-      object$varMatPred <- varMatPred <- matrix(
-        mapply(FUN = varioEx, gDistPred, MoreArgs = list(variogramModel)),
-        nrow = nPred,
-        ncol = 1
-      )
-
-      if (
-        !is.null(params$nclus) &&
-          params$nclus > 1 &&
-          nObs > params$cnAreas &&
-          requireNamespace("parallel")
-      ) {
-        cl <- rtopCluster(
-          nclus = params$nclus,
-          type = params$clusType,
-          outfile = params$outfile
-        )
-
-        varMatPredObs <- matrix(
-          unlist(parallel::parLapply(
-            cl,
-            1:nPred,
-            fun = function(x, gDistPredObs, variogramModel) {
-              mapply(gDistPredObs[, x], FUN = function(y) {
-                varioEx(y, variogramModel)
-              })
-            },
-            gDistPredObs = gDistPredObs,
-            variogramModel = variogramModel
-          )),
-          nrow = nObs,
-          ncol = nPred
-        )
-      } else {
-        varMatPredObs <- matrix(
-          mapply(FUN = varioEx, gDistPredObs, MoreArgs = list(variogramModel)),
-          nrow = nObs,
-          ncol = nPred
-        )
-      }
-      if (
-        is.null(dim(varMatPred)) || dim(varMatPred)[1] != dim(varMatPred)[2]
-      ) {
-        vDiagPred <- varMatPred
-      } else {
-        vDiagPred <- diag(varMatPred)
-      }
-      for (ia in 1:nObs) {
-        for (ib in 1:nPred) {
-          varMatPredObs[ia, ib] <- varMatPredObs[ia, ib] -
-            0.5 * (vDiagObs[ia] + vDiagPred[ib])
-        }
-      }
-      object$varMatPredObs <- varMatPredObs
-    } else {
-      # Do full integration over variograms
-      object$varMatPred <- varMat(
-        dPred,
-        coor1 = utop_centroid_coordinates(predictionLocations),
-        diag = TRUE,
-        variogramModel = variogramModel,
-        debug.level = debug.level,
-        newPar = params
-      )
-      object$varMatPredObs <- varMat(
-        dObs,
-        dPred,
-        coor1 = utop_centroid_coordinates(observations),
-        coor2 = utop_centroid_coordinates(predictionLocations),
-        variogramModel = variogramModel,
-        sub1 = diag(object$varMatObs),
-        sub2 = object$varMatPred,
-        debug.level = debug.level,
-        newPar = params
-      )
-    }
-    predComp <- TRUE
-  }
-  if (params$nugget) {
-    if (obsComp) {
-      if ("overlapObs" %in% names(object)) {
-        overlapObs <- object$overlapObs
-      } else {
-        object$overlapObs <- overlapObs <- findOverlap(
-          observations,
-          observations,
-          params = params
-        )
-      }
-      fObs <- matrix(rep(aObs, nObs), ncol = nObs)
-      sObs <- t(fObs)
-      nuggObs <- matrix(
-        mapply(
-          FUN = nuggEx,
-          (1 / fObs + 1 / sObs - 2 * overlapObs / (fObs * sObs)) / 2,
-          MoreArgs = list(variogramModel = variogramModel)
-        ),
-        ncol = nObs
-      )
-      diag(nuggObs) <- 0
-      object$varMatObs <- object$varMatObs + nuggObs
-    }
-    if (predComp) {
-      if ("overlapPredObs" %in% names(object)) {
-        overlapPredObs <- object$overlapPredObs
-      } else {
-        object$overlapPredObs <- overlapPredObs <- findOverlap(
-          observations,
-          predictionLocations,
-          params = params
-        )
-      }
-      aPred <- utop_area(predictionLocations)
-      fPredObs <- matrix(rep(aObs, nPred), ncol = nPred)
-      sPredObs <- t(matrix(rep(aPred, nObs), ncol = nObs))
-      nuggPredObs <- matrix(
-        mapply(
-          FUN = nuggEx,
-          (1 /
-            fPredObs +
-            1 / sPredObs -
-            2 * overlapPredObs / (fPredObs * sPredObs)) /
-            2,
-          MoreArgs = list(variogramModel = variogramModel)
-        ),
-        ncol = nPred
-      )
-      object$varMatPredObs <- object$varMatPredObs + nuggPredObs
-    }
-  }
-  if ("varMatPredObs" %in% names(object)) {
-    attr(object$varMatPredObs, "variogramModel") <- variogramModel
-  }
-  if ("varMatPred" %in% names(object)) {
-    attr(object$varMatPred, "variogramModel") <- variogramModel
-  }
-  object
-}
-
-
-#' @export
-#' @rdname varMat
-varMat.matrix <- function(
+#' @noRd
+compute_var_mat_matrix <- function(
   object,
   variogramModel,
   diag = FALSE,
@@ -351,51 +29,33 @@ varMat.matrix <- function(
   varMatrix
 }
 
-
-#' @export
-#' @rdname varMat
-varMat.sf <- function(object, object2 = NULL, ...) {
-  varMatDefault(object, object2, ...)
-}
-
-
-#' @export
-#' @rdname varMat
-varMat.stars <- function(object, object2 = NULL, ...) {
-  object <- utop_stars_support(object)
-  if (!is.null(object2)) {
-    object2 <- utop_as_sf(object2)
-  }
-  varMatDefault(object, object2, ...)
-}
-
-
 #' @noRd
-varMatDefault <- function(
+compute_var_mat_default <- function(
   object1,
   object2 = NULL,
   variogramModel,
   overlapObs,
   overlapPredObs,
+  params = NULL,
   ...
 ) {
-  params <- getRtopParams(...)
-  d1 <- rtopDisc(object1, params)
+  params <- coerce_utop_params(params, ...)
+  variogramModel <- coerce_variogram_model(variogramModel)
+  d1 <- utop_disc(object1, params = params, ...)
   if (!is.null(object2)) {
-    d2 <- rtopDisc(object2, params)
+    d2 <- utop_disc(object2, params = params, ...)
   }
-  if (params$gDistPred) {
-    gDist1 <- gDist(d1, params = params)
+  if (params@g_dist_pred) {
+    gDist1 <- compute_g_dist_list(d1, params = params, ...)
     # calling varMat.matrix
-    varMatObs <- varMat(
+    varMatObs <- compute_var_mat_matrix(
       gDist1,
       variogramModel = variogramModel,
-      params = params,
       diag = TRUE,
       ...
     )
   } else {
-    varMatObs <- varMat(
+    varMatObs <- compute_var_mat_list(
       d1,
       variogramModel = variogramModel,
       params = params,
@@ -403,9 +63,14 @@ varMatDefault <- function(
     )
   }
 
-  if (params$nugget) {
+  if (params@nugget) {
     if (missing(overlapObs)) {
-      overlapObs <- findOverlap(object1, object1, params = params)
+      overlapObs <- find_overlap(
+        object1,
+        object1,
+        partial_overlap = params@partial_overlap,
+        debug.level = params@debug_level
+      )
     }
 
     aObs <- utop_area(object1)
@@ -429,33 +94,30 @@ varMatDefault <- function(
     return(varMatObs)
   }
 
-  if (params$gDistPred && !is.null(object2)) {
-    gDistPred <- gDist(d2, diag = TRUE, params = params)
+  if (params@g_dist_pred && !is.null(object2)) {
+    gDistPred <- compute_g_dist_list(d2, diag = TRUE, params = params, ...)
     # Calling varMat.matrix
-    varMatPred <- varMat(
+    varMatPred <- compute_var_mat_matrix(
       gDistPred,
-      params = params,
       variogramModel = variogramModel,
       ...
     )
-    gDistPredObs <- gDist(d1, d2, params = params)
-    varMatPredObs <- varMat(
+    gDistPredObs <- compute_g_dist_list(d1, d2, params = params, ...)
+    varMatPredObs <- compute_var_mat_matrix(
       gDistPredObs,
       sub1 = diag(varMatObs),
       sub2 = varMatPred,
-      params = params,
       variogramModel = variogramModel,
       ...
     )
   } else {
-    # Calling varMat.list
-    varMatPred <- varMat(
+    varMatPred <- compute_var_mat_list(
       d2,
       diag = TRUE,
       params = params,
-      variogramModel = variogramModel,
+      variogramModel = variogramModel
     )
-    varMatPredObs <- varMat(
+    varMatPredObs <- compute_var_mat_list(
       d1,
       d2,
       sub1 = diag(varMatObs),
@@ -465,9 +127,14 @@ varMatDefault <- function(
       ...
     )
   }
-  if (params$nugget) {
+  if (params@nugget) {
     if (missing(overlapPredObs)) {
-      overlapPredObs <- findOverlap(object1, object2, params = params)
+      overlapPredObs <- find_overlap(
+        object1,
+        object2,
+        partial_overlap = params@partial_overlap,
+        debug.level = params@debug_level
+      )
     }
 
     aPred <- utop_area(object2)
@@ -502,9 +169,8 @@ varMatDefault <- function(
 
 # object and object2 (as lists) are here discretized areas
 # coor1 and coor2 are coordinates of the areas, used for maximum distance
-#' @export
-#' @rdname varMat
-varMat.list <- function(
+#' @noRd
+compute_var_mat_list <- function(
   object,
   object2 = NULL,
   coor1,
@@ -514,10 +180,19 @@ varMat.list <- function(
   diag = FALSE,
   sub1,
   sub2,
-  debug.level = ifelse(interactive(), 1, 0),
+  params = NULL,
+  debug.level = NULL,
+  debug_level = NULL,
   ...
 ) {
-  params <- getRtopParams(...)
+  params <- coerce_utop_params(params, ...)
+  if (is.null(debug.level)) {
+    debug.level <- if (!is.null(debug_level)) {
+      debug_level
+    } else {
+      params@debug_level
+    }
+  }
   d1 <- object
   d2 <- object2
   if (is.null(d2)) {
@@ -542,15 +217,15 @@ varMat.list <- function(
   varMatrix <- matrix(-999, nrow = ndim, ncol = mdim)
 
   if (
-    !is.null(params$nclus) &&
-      params$nclus > 1 &&
-      length(d1) + length(d2) > params$cnAreas &&
+    !is.null(params@n_clus) &&
+      params@n_clus > 1 &&
+      length(d1) + length(d2) > params@cn_areas &&
       requireNamespace("parallel")
   ) {
-    cl <- rtopCluster(
-      params$nclus,
-      type = params$clusType,
-      outfile = params$outfile
+    cl <- utop_cluster_impl(
+      params@n_clus,
+      type = params@clus_type,
+      outfile = params@outfile
     )
     if (missing(coor1)) {
       coor1 <- NULL

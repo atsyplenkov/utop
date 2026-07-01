@@ -1,56 +1,11 @@
-#' @export
-#' @rdname rtopKrige
-rtopKrige.rtop <- function(object, varMatUpdate = FALSE, params = list(), ...) {
-  params <- getRtopParams(object$params, newPar = params, ...)
-  if (!is.null(params$nsim) && params$nsim > 0) {
-    return(rtopSim(object, varMatUpdate, params = params))
-  }
-  observations <- object$observations
-
-  predictionLocations <- object$predictionLocations
-  if (
-    !all(c("varMatObs", "varMatPredObs") %in% names(object)) || varMatUpdate
-  ) {
-    object <- varMat(object, varMatUpdate, params = params, ...)
-  }
-
-  varMatObs <- object$varMatObs
-  varMatPredObs <- object$varMatPredObs
-
-  krigeRes <- rtopKrige(
-    object = observations,
-    predictionLocations = predictionLocations,
-    varMatObs = varMatObs,
-    varMatPredObs = varMatPredObs,
-    params = params,
-    formulaString = object$formulaString,
-    dObs = object$dObs,
-    dPred = object$dPred,
-    ...
-  )
-  object$predictions <- krigeRes$predictions
-  if ("cvInfo" %in% names(krigeRes)) {
-    object$cvInfo <- krigeRes$cvInfo
-  }
-  if ("weight" %in% names(krigeRes)) {
-    object$weight <- krigeRes$weight
-  }
-  if ("removed" %in% names(krigeRes)) {
-    object$removed <- krigeRes$removed
-  }
-  object
-}
-
-
-#' @export
-#' @rdname rtopKrige
-rtopKrige.default <- function(
+#' @noRd
+compute_krige <- function(
   object,
   predictionLocations = NULL,
   varMatObs,
   varMatPredObs,
   varMat,
-  params = list(),
+  params = NULL,
   formulaString,
   sel,
   wret = FALSE,
@@ -60,38 +15,30 @@ rtopKrige.default <- function(
   trendPred = NULL,
   ...
 ) {
-  params <- getRtopParams(params, ...)
-  if (!is.null(params$nsim) && params$nsim > 0) {
-    return(rtopSim(
-      object,
-      predictionLocations,
-      varMatObs,
-      varMatPredObs,
-      varMat,
-      params,
-      formulaString,
-      ...
-    ))
+  dots <- list(...)
+  if ("wret" %in% names(dots)) {
+    wret <- isTRUE(dots$wret)
+    dots$wret <- NULL
   }
-  #
-  cv <- params$cv
-  #  else object$params$cv = params$cv = cv
-  nmax <- params$nmax
-  wlim <- params$wlim
-  wlimMethod <- params$wlimMethod
-  maxdist <- params$maxdist
-  debug.level <- params$debug.level
-  lambda <- params$lambda
-  if ("singularSolve" %in% names(params)) {
-    singularSolve <- params$singularSolve
+  if ("lambda" %in% names(dots)) {
+    lambda <- dots$lambda
+    dots$lambda <- NULL
   } else {
-    singularSolve <- FALSE
+    lambda <- NULL
   }
+  params <- do.call(coerce_utop_params, c(list(params = params), dots))
+  cv <- params@cv
+  nmax <- params@n_max
+  wlim <- params@wlim
+  wlimMethod <- params@wlim_method
+  maxdist <- params@max_dist
+  debug.level <- params@debug_level
   if (!is.null(lambda)) {
     BLUE <- TRUE
   } else {
     BLUE <- FALSE
   }
+  singularSolve <- params@singular_solve
   if (!missing(varMat)) {
     if (missing(varMatObs)) {
       varMatObs <- varMat$varMatObs
@@ -115,7 +62,7 @@ rtopKrige.default <- function(
   if (missing(sel)) {
     sel <- c(1:npred)
   }
-  if (params$unc && "unc" %in% names(observations)) {
+  if (params@unc && "unc" %in% names(observations)) {
     unc0 <- observations$unc
   } else {
     unc0 <- array(0, nobs)
@@ -123,7 +70,7 @@ rtopKrige.default <- function(
   #
   # Universal kriging trend basis functions from the RHS of formulaString,
   # evaluated at centroids or block-averaged over the rtopDisc()
-  # discretisation, according to params$ukTrendSupport.
+  # discretisation, according to params@uk_trend_support.
   if (is.null(trendObs)) {
     trendObs <- ukTrendMatrix(formulaString, observations, params, dObs)
   }

@@ -71,9 +71,10 @@ ukModelMatrix <- function(tt, data) {
 ukTrendMatrix <- function(
   formulaString,
   locations,
-  params = list(),
+  params = NULL,
   discPoints = NULL
 ) {
+  params <- coerce_utop_params(params)
   tt <- ukTrendTerms(formulaString)
   nloc <- ukNLoc(locations)
   if (length(attr(tt, "term.labels")) == 0) {
@@ -87,11 +88,7 @@ ukTrendMatrix <- function(
       dimnames = list(NULL, "(Intercept)")
     ))
   }
-  support <- if (is.null(params$ukTrendSupport)) {
-    "centroid"
-  } else {
-    params$ukTrendSupport
-  }
+  support <- params@uk_trend_support
   if (!support %in% c("centroid", "block")) {
     stop(paste(
       "Unknown ukTrendSupport:",
@@ -129,7 +126,7 @@ ukTrendMatrix <- function(
           "requires polygon supports or precomputed discretisation points"
         ))
       }
-      discPoints <- rtopDisc(locations, params = params)
+      discPoints <- utop_disc(locations, params = params)
     }
     if (length(discPoints) != nloc) {
       stop("Number of discretisation elements does not match number of areas")
