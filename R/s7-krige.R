@@ -111,15 +111,7 @@ utop_krige_apply_runtime <- function(params, runtime) {
 
 #' @noRd
 utop_krige_runtime_only <- function(runtime) {
-  krige_only <- c(
-    "nsim",
-    "lambda",
-    "olags",
-    "plags",
-    "lagExact",
-    "sel",
-    "wret"
-  )
+  krige_only <- c("nsim", "lambda", "olags", "plags", "lagExact", "sel", "wret")
   runtime[intersect(names(runtime), krige_only)]
 }
 
@@ -152,11 +144,7 @@ utop_krige_extra_params <- function(params, ...) {
   runtime <- runtime[intersect(names(runtime), runtime_names)]
   utop_updates <- params[!names(params) %in% runtime_names]
   dots <- dots[!names(dots) %in% runtime_names]
-  list(
-    params = utop_updates,
-    runtime = runtime,
-    dots = dots
-  )
+  list(params = utop_updates, runtime = runtime, dots = dots)
 }
 
 S7::method(utop_krige, utop_sf_class) <- function(

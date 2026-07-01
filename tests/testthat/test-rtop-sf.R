@@ -17,4 +17,3 @@ test_that("sf kriging returns complete prediction fields", {
   expect_false(anyNA(rtop_pred@predictions$var1.pred))
   expect_false(anyNA(rtop_pred@predictions$var1.var))
 })
-

@@ -47,13 +47,7 @@ utop_cluster_impl <- function(
 #'
 #' @return A cluster object or `NULL`.
 #' @export
-utop_cluster <- function(
-  n_clus,
-  ...,
-  action = "start",
-  type,
-  outfile = NULL
-) {
+utop_cluster <- function(n_clus, ..., action = "start", type, outfile = NULL) {
   utop_cluster_impl(
     n_clus = n_clus,
     ...,

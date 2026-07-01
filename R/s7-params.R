@@ -32,9 +32,10 @@ find_par_init <- function(formula, observations, model) {
         sample(seq_len(ntime), 20)
       )
     }
-    vario <- utop_variogram_data(
-      utop_variogram(observations, formula = formula)
-    )
+    vario <- utop_variogram_data(utop_variogram(
+      observations,
+      formula = formula
+    ))
     a_obs <- utop_area(observations)
   } else {
     formula_use <- formula

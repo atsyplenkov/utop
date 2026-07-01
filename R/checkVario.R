@@ -38,7 +38,9 @@ compute_check_variogram <- function(
   } else {
     par("ask" = FALSE)
   }
-  variogramModel <- if (S7::S7_inherits(object$variogramModel, UtopVariogramModel)) {
+  variogramModel <- if (
+    S7::S7_inherits(object$variogramModel, UtopVariogramModel)
+  ) {
     coerce_variogram_model(object$variogramModel)
   } else {
     object$variogramModel

@@ -48,10 +48,7 @@ build_variogram_model <- function(
     }
   }
 
-  UtopVariogramModel(
-    model = model,
-    params = c(sill, range, nugget, exp, exp0)
-  )
+  UtopVariogramModel(model = model, params = c(sill, range, nugget, exp, exp0))
 }
 
 #' Create or update a utop variogram model

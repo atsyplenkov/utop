@@ -5,17 +5,20 @@ sp_obs <- spatial$observations
 sp_pred <- spatial$prediction_locations
 sf_obs <- sf_fixtures$observations
 
-params_sp <- modifyList(
-  spatial$params,
-  list(nugget = FALSE, model = "Ex1")
-)
+params_sp <- modifyList(spatial$params, list(nugget = FALSE, model = "Ex1"))
 params_sf_cloud <- modifyList(
   sf_fixtures$params,
   list(cloud = TRUE, nugget = FALSE, model = "Ex1")
 )
 params_sf_cloud_false <- modifyList(
   sf_fixtures$params,
-  list(cloud = FALSE, nugget = FALSE, model = "Ex1", g_dist_est = FALSE, g_dist_pred = FALSE)
+  list(
+    cloud = FALSE,
+    nugget = FALSE,
+    model = "Ex1",
+    g_dist_est = FALSE,
+    g_dist_pred = FALSE
+  )
 )
 
 vario_sp <- utop_variogram(sp_obs, formula = "obs ~ 1", params = params_sp)

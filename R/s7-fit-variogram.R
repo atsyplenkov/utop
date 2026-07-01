@@ -70,11 +70,7 @@ fit_variogram_binned <- function(
     model@params[3] <- 0
   }
 
-  list(
-    model = model,
-    var_fit = vf$varFit,
-    caches = caches
-  )
+  list(model = model, var_fit = vf$varFit, caches = caches)
 }
 
 #' @noRd
@@ -144,11 +140,7 @@ fit_variogram_cloud <- function(
     model@params[3] <- 0
   }
 
-  list(
-    model = model,
-    var_fit = vf$varFit,
-    caches = caches
-  )
+  list(model = model, var_fit = vf$varFit, caches = caches)
 }
 
 #' @noRd

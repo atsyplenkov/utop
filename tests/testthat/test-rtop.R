@@ -65,12 +65,7 @@ test_that("spatial variogram updates rebuild semivariance matrices", {
 
 test_that("spatial simulation returns expected structure", {
   set.seed(1501)
-  rtop_sim <- utop_sim(
-    rtop_fitted,
-    nsim = 2,
-    logdist = TRUE,
-    debug_level = -1
-  )
+  rtop_sim <- utop_sim(rtop_fitted, nsim = 2, logdist = TRUE, debug_level = -1)
 
   expect_s3_class(rtop_sim@simulations, "data.frame")
   expect_true(all(c("sim1", "sim2") %in% names(rtop_sim@simulations)))

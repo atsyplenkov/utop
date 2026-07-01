@@ -16,10 +16,7 @@ test_that("spatial workflow numerical outputs are stable", {
     cor(cv@predictions$observed, cv@predictions$var1.pred),
     variant = "spatial-cv-cor"
   )
-  expect_snapshot_numeric(
-    pred@predictions$var1.pred,
-    variant = "spatial-pred"
-  )
+  expect_snapshot_numeric(pred@predictions$var1.pred, variant = "spatial-pred")
   expect_snapshot_numeric(
     obj@variogram@data$gamma,
     variant = "spatial-vario-gamma"
@@ -43,10 +40,7 @@ test_that("sf subset workflow numerical outputs are stable", {
   pred <- utop_krige(obj)
   cv <- utop_krige(obj, cv = TRUE)
 
-  expect_snapshot_numeric(
-    pred@predictions$var1.pred,
-    variant = "sf-pred"
-  )
+  expect_snapshot_numeric(pred@predictions$var1.pred, variant = "sf-pred")
   expect_snapshot_numeric(
     cor(cv@predictions$observed, cv@predictions$var1.pred),
     variant = "sf-cv-cor"
@@ -74,12 +68,7 @@ test_that("spatial simulation outputs are stable with fixed seed", {
   sim_input@prediction_locations$replaceNumber <- seq_len(nrow(
     sim_input@prediction_locations
   ))
-  sim_3 <- utop_sim(
-    sim_input,
-    nsim = 3,
-    replace = TRUE,
-    debug_level = -1
-  )
+  sim_3 <- utop_sim(sim_input, nsim = 3, replace = TRUE, debug_level = -1)
 
   expect_snapshot_numeric(
     c(
@@ -114,10 +103,7 @@ test_that("covariance matrix blocks are stable", {
   obj <- utop_fit_variogram(obj, iprint = -1)
   obj <- utop_var_mat(obj)
 
-  expect_snapshot_numeric(
-    diag(obj@var_mat_obs),
-    variant = "var-mat-obs-diag"
-  )
+  expect_snapshot_numeric(diag(obj@var_mat_obs), variant = "var-mat-obs-diag")
   expect_snapshot_numeric(
     obj@var_mat_pred_obs[, 1],
     variant = "var-mat-pred-obs-col1"
@@ -166,16 +152,10 @@ test_that("universal kriging workflow numerical outputs are stable", {
   pred <- utop_krige(obj)
   cv <- utop_krige(obj, cv = TRUE)
 
-  expect_snapshot_numeric(
-    pred@predictions$var1.pred,
-    variant = "uk-pred"
-  )
+  expect_snapshot_numeric(pred@predictions$var1.pred, variant = "uk-pred")
   expect_snapshot_numeric(
     cor(cv@predictions$observed, cv@predictions$var1.pred),
     variant = "uk-cv-cor"
   )
-  expect_snapshot_numeric(
-    obj@variogram@data$gamma,
-    variant = "uk-vario-gamma"
-  )
+  expect_snapshot_numeric(obj@variogram@data$gamma, variant = "uk-vario-gamma")
 })

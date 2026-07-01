@@ -94,10 +94,7 @@ S7::method(utop_g_dist, Utop) <- function(object, params = list(), ...) {
   if (is.null(object@d_obs)) {
     object@d_obs <- utop_disc(object@observations, params = object@params, ...)
   }
-  if (
-    is.null(object@d_pred) &&
-      !is.null(object@prediction_locations)
-  ) {
+  if (is.null(object@d_pred) && !is.null(object@prediction_locations)) {
     object@d_pred <- utop_disc(
       object@prediction_locations,
       params = object@params,
@@ -154,6 +151,10 @@ S7::method(utop_g_dist, utop_stars_class) <- function(
   compute_g_dist_sf(object, object2 = object2, ...)
 }
 
-S7::method(utop_g_dist, S7::class_list) <- function(object, object2 = NULL, ...) {
+S7::method(utop_g_dist, S7::class_list) <- function(
+  object,
+  object2 = NULL,
+  ...
+) {
   compute_g_dist_list(object, object2 = object2, ...)
 }

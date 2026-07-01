@@ -1,10 +1,5 @@
 #' @noRd
-compute_disc_sf <- function(
-  object,
-  params,
-  bb = sf::st_bbox(object),
-  ...
-) {
+compute_disc_sf <- function(object, params, bb = sf::st_bbox(object), ...) {
   if (!S7::S7_inherits(params, UtopParams)) {
     params <- coerce_utop_params(params, ...)
   }
@@ -83,13 +78,7 @@ compute_disc_sf <- function(
     }
     print(paste("Sampling points from ", nps, "areas"))
     for (ip in 1:nps) {
-      spp[[ip]] <- lfun(
-        sf::st_geometry(object)[ip],
-        resol,
-        ires0,
-        bbdia,
-        small
-      )
+      spp[[ip]] <- lfun(sf::st_geometry(object)[ip], resol, ires0, bbdia, small)
       if (debug.level > 1) {
         print(paste(
           "Sampling from area number",
@@ -108,10 +97,7 @@ compute_disc_sf <- function(
     if (debug.level >= 0) {
       print(paste(
         "Sampled on average",
-        round(
-          mean(unlist(lapply(spp, FUN = function(sppp) dim(sppp)[1]))),
-          2
-        ),
+        round(mean(unlist(lapply(spp, FUN = function(sppp) dim(sppp)[1]))), 2),
         "points from",
         nps,
         "areas"
@@ -166,10 +152,7 @@ utop_disc <- S7::new_generic(
 
 S7::method(utop_disc, Utop) <- function(object, params = list(), ...) {
   object@params <- utop_params(object@params, new_params = params, ...)
-  bb <- utop_support_bbox(
-    object@observations,
-    object@prediction_locations
-  )
+  bb <- utop_support_bbox(object@observations, object@prediction_locations)
 
   object@d_obs <- utop_disc(
     object@observations,

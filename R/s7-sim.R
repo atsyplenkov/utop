@@ -17,19 +17,19 @@ utop_sim_runtime_params <- function(params, ...) {
   }
   runtime <- c(params, dots)
   runtime <- runtime[intersect(names(runtime), runtime_names)]
-  if ("large_first" %in% names(runtime) && !("largeFirst" %in% names(runtime))) {
+  if (
+    "large_first" %in% names(runtime) && !("largeFirst" %in% names(runtime))
+  ) {
     runtime$largeFirst <- runtime$large_first
   }
-  if ("debug_level" %in% names(runtime) && !("debug.level" %in% names(runtime))) {
+  if (
+    "debug_level" %in% names(runtime) && !("debug.level" %in% names(runtime))
+  ) {
     runtime$debug.level <- runtime$debug_level
   }
   utop_updates <- params[!names(params) %in% runtime_names]
   dots <- dots[!names(dots) %in% runtime_names]
-  list(
-    params = utop_updates,
-    runtime = runtime,
-    dots = dots
-  )
+  list(params = utop_updates, runtime = runtime, dots = dots)
 }
 
 #' @noRd
@@ -130,7 +130,8 @@ compute_sim_utop <- function(
     )
   } else if (
     replace &&
-      !(nrow(observations) >= max(prediction_locations$replaceNumber, na.rm = TRUE) &&
+      !(nrow(observations) >=
+        max(prediction_locations$replaceNumber, na.rm = TRUE) &&
         min(prediction_locations$replaceNumber, na.rm = TRUE) >= 1)
   ) {
     stop(
@@ -212,9 +213,7 @@ compute_sim_utop <- function(
         v_pred_obs <- v_pred[inew, -inew, drop = FALSE]
         unc0 <- 0
       } else {
-        mdist <- sqrt(
-          diff(range(obscors[, 1]))^2 + diff(range(obscors[, 2]))^2
-        )
+        mdist <- sqrt(diff(range(obscors[, 1]))^2 + diff(range(obscors[, 2]))^2)
         wlim0 <- wlim
         repeat {
           wlim0 <- wlim0 / 1.05
@@ -248,7 +247,9 @@ compute_sim_utop <- function(
           if (inherits(ret, "try-error")) {
             print(paste("error in simulation of area number", ip))
           }
-          if (wlim0 < 1.05 || (!inherits(ret, "try-error") && ret$pred[2] > 0)) {
+          if (
+            wlim0 < 1.05 || (!inherits(ret, "try-error") && ret$pred[2] > 0)
+          ) {
             break
           }
         }

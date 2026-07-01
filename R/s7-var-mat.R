@@ -42,10 +42,7 @@ compute_var_mat_utop <- function(
   if (!is.null(object@var_mat_obs) && !var_mat_update) {
     vm <- object@var_mat_obs
     if (
-      !identical(
-        attr(vm, "variogramModel", exact = TRUE),
-        variogram_model
-      ) ||
+      !identical(attr(vm, "variogramModel", exact = TRUE), variogram_model) ||
         n_obs != dim(vm)[1] ||
         (!is.null(prediction_locations) &&
           !is.null(object@var_mat_pred_obs) &&
@@ -61,8 +58,7 @@ compute_var_mat_utop <- function(
 
   if (is.null(object@var_mat_obs) || var_mat_update) {
     if (
-      is.null(object@d_obs) &&
-        !(lg_dist_pred && !is.null(object@g_dist_obs))
+      is.null(object@d_obs) && !(lg_dist_pred && !is.null(object@g_dist_obs))
     ) {
       object <- utop_disc(object, ...)
     }
@@ -142,8 +138,7 @@ compute_var_mat_utop <- function(
     n_pred <- nrow(prediction_locations)
 
     if (
-      is.null(object@d_pred) &&
-        !(lg_dist_pred && !is.null(object@g_dist_pred))
+      is.null(object@d_pred) && !(lg_dist_pred && !is.null(object@g_dist_pred))
     ) {
       object <- utop_disc(object, ...)
     }
