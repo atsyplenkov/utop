@@ -34,11 +34,12 @@ utop_spatial_fixtures <- function() {
     observations = observations,
     prediction_locations = prediction_locations,
     params = list(
-      gDist = TRUE,
+      g_dist_est = TRUE,
+      g_dist_pred = TRUE,
       cloud = FALSE,
-      rresol = 25,
-      hresol = 3,
-      debug.level = -1
+      r_resol = 25,
+      h_resol = 3,
+      debug_level = -1
     )
   )
 }
@@ -47,7 +48,7 @@ utop_spatial_fixtures <- function() {
 utop_sf_subset_fixtures <- function(
   n_obs = 10,
   n_pred = 5,
-  params = list(gDist = TRUE, cloud = FALSE)
+  params = list(g_dist_est = TRUE, g_dist_pred = TRUE, cloud = FALSE)
 ) {
   observations <- utop_read_sf("observations")
   prediction_locations <- utop_read_sf("predictionLocations")
@@ -64,11 +65,12 @@ utop_spatial_subset_fixtures <- function(
   n_obs = 10,
   n_pred = 2,
   params = list(
-    gDist = TRUE,
+    g_dist_est = TRUE,
+    g_dist_pred = TRUE,
     cloud = FALSE,
-    rresol = 25,
-    hresol = 3,
-    debug.level = -1
+    r_resol = 25,
+    h_resol = 3,
+    debug_level = -1
   )
 ) {
   fixtures <- utop_spatial_fixtures()

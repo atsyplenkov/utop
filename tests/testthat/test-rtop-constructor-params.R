@@ -3,80 +3,77 @@ test_that("constructor and parameter flow cover inference, coercion, and project
   sf_fixtures <- utop_sf_subset_fixtures(n_obs = 6, n_pred = 2)
 
   expect_warning(
-    inferred <- createRtopObject(
+    inferred <- utop_object(
       spatial$observations,
       spatial$prediction_locations,
       params = spatial$params
     ),
-    "formulaString missing"
+    "formula missing"
   )
-  expect_s3_class(inferred, "rtop")
-  expect_identical(deparse(inferred$formulaString), "obs ~ 1")
-  expect_true("area" %in% names(inferred$observations))
-  expect_true("area" %in% names(inferred$predictionLocations))
+  expect_true(S7::S7_inherits(inferred, Utop))
+  expect_identical(deparse(inferred@formula), "obs ~ 1")
+  expect_true("area" %in% names(inferred@observations))
+  expect_true("area" %in% names(inferred@prediction_locations))
 
-  coerced <- createRtopObject(
+  coerced <- utop_object(
     spatial$observations,
     spatial$prediction_locations,
-    formulaString = "obs ~ 1",
+    formula = "obs ~ 1",
     params = spatial$params
   )
-  expect_s3_class(coerced$formulaString, "formula")
-  expect_identical(deparse(coerced$formulaString), "obs ~ 1")
+  expect_s3_class(coerced@formula, "formula")
+  expect_identical(deparse(coerced@formula), "obs ~ 1")
 
-  updated <- createRtopObject(
-    coerced,
-    params = list(gDist = FALSE, model = "Ex1")
-  )
-  expect_s3_class(updated, "rtop")
-  expect_false(isTRUE(updated$params$gDistEst))
-  expect_false(isTRUE(updated$params$gDistPred))
+  updated <- utop_object(coerced, params = list(gDist = FALSE, model = "Ex1"))
+  expect_true(S7::S7_inherits(updated, Utop))
+  expect_false(isTRUE(updated@params@g_dist_est))
+  expect_false(isTRUE(updated@params@g_dist_pred))
 
-  gdist_true <- createRtopObject(
+  gdist_true <- utop_object(
     spatial$observations,
     spatial$prediction_locations,
-    formulaString = "obs ~ 1",
+    formula = "obs ~ 1",
     params = list(gDist = TRUE)
   )
-  expect_true(gdist_true$params$gDistEst)
-  expect_true(gdist_true$params$gDistPred)
+  expect_true(gdist_true@params@g_dist_est)
+  expect_true(gdist_true@params@g_dist_pred)
 
-  gdist_false <- createRtopObject(
+  gdist_false <- utop_object(
     spatial$observations,
     spatial$prediction_locations,
-    formulaString = "obs ~ 1",
+    formula = "obs ~ 1",
     params = list(gDist = FALSE)
   )
-  expect_false(isTRUE(gdist_false$params$gDistEst))
-  expect_false(isTRUE(gdist_false$params$gDistPred))
+  expect_false(isTRUE(gdist_false@params@g_dist_est))
+  expect_false(isTRUE(gdist_false@params@g_dist_pred))
 
-  expect_error(utop:::getRtopParams(list(), geoDist = TRUE))
+  expect_error(utop:::utop_params(list(), geoDist = TRUE))
 
-  supported_model <- createRtopObject(
+  supported_model <- utop_object(
     spatial$observations,
     spatial$prediction_locations,
-    formulaString = "obs ~ 1",
+    formula = "obs ~ 1",
     params = list(model = "Ex1")
   )
-  expect_identical(supported_model$params$model, "Ex1")
+  expect_identical(supported_model@params@model, "Ex1")
 
   expect_error(
-    createRtopObject(
+    utop_object(
       spatial$observations,
       spatial$prediction_locations,
-      formulaString = "obs ~ 1",
+      formula = "obs ~ 1",
       params = list(model = "Bogus")
     ),
     "not implemented"
   )
 
-  sf_obj <- createRtopObject(
+  sf_obj <- utop_object(
     sf_fixtures$observations,
     sf_fixtures$prediction_locations,
-    formulaString = "obs ~ 1"
+    formula = "obs ~ 1"
   )
-  expect_true("area" %in% names(sf_obj$observations))
-  expect_true("area" %in% names(sf_obj$predictionLocations))
+  expect_true("area" %in% names(sf_obj@observations))
+  expect_true("area" %in% names(sf_obj@prediction_locations))
 
   sf_obs <- sf_fixtures$observations
   sf_pred <- sf_fixtures$prediction_locations
@@ -89,20 +86,16 @@ test_that("constructor and parameter flow cover inference, coercion, and project
   }
 
   expect_error(
-    createRtopObject(
+    utop_object(
       sf_obs,
       sf::st_transform(sf_pred, mismatch_crs),
-      formulaString = "obs ~ 1"
+      formula = "obs ~ 1"
     ),
     "different projections"
   )
 
   expect_error(
-    createRtopObject(
-      sf_obs,
-      sf::st_set_crs(sf_pred, NA),
-      formulaString = "obs ~ 1"
-    ),
-    "only one of observations and predictionLocations have projection"
+    utop_object(sf_obs, sf::st_set_crs(sf_pred, NA), formula = "obs ~ 1"),
+    "only one of observations and prediction_locations have projection"
   )
 })

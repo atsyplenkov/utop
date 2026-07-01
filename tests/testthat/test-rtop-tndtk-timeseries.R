@@ -4,15 +4,15 @@ test_that("sf variogram uses explicit support area", {
   observations$obs <- demo$gauged_catchments$MAF[1:5]
   observations$area <- seq(10, 50, by = 10)
 
-  vario <- rtopVariogram(
+  vario <- utop_variogram(
     observations,
-    formulaString = obs ~ 1,
+    formula = obs ~ 1,
     params = list(cloud = TRUE)
   )
 
-  expect_s3_class(vario, "rtopVariogramCloud")
-  expect_equal(vario$a1, observations$area[vario$acl1])
-  expect_equal(vario$a2, observations$area[vario$acl2])
+  expect_true(S7::S7_inherits(vario, UtopVariogramCloud))
+  expect_equal(vario@data$a1, observations$area[vario@data$acl1])
+  expect_equal(vario@data$a2, observations$area[vario@data$acl2])
 })
 
 test_that("stars pooled variogram averages TNDTK time steps", {
@@ -20,17 +20,17 @@ test_that("stars pooled variogram averages TNDTK time steps", {
   observations <- fixture$observations
   obs_mat <- observations[["obs"]]
 
-  vario <- rtopVariogram(
+  vario <- utop_variogram(
     observations,
-    formulaString = obs ~ 1,
+    formula = obs ~ 1,
     params = list(cloud = TRUE)
   )
   manual_gamma <- mean((obs_mat[1, ] - obs_mat[2, ])^2 / 2)
-  pair_vario <- vario[vario$acl1 == 1 & vario$acl2 == 2, ]
+  pair_vario <- vario@data[vario@data$acl1 == 1 & vario@data$acl2 == 2, ]
   support <- utop:::utop_stars_support(observations)
 
   expect_s3_class(support, "sf")
-  expect_s3_class(vario, "rtopVariogramCloud")
+  expect_true(S7::S7_inherits(vario, UtopVariogramCloud))
   expect_equal(nrow(pair_vario), 1)
   expect_equal(pair_vario$np, length(fixture$time))
   expect_equal(pair_vario$gamma, manual_gamma, tolerance = 1e-12)
@@ -43,26 +43,26 @@ test_that("TNDTK stars time series interpolate with pooled variogram", {
   params <- list(
     rresol = 4,
     rstype = "regular",
-    debug.level = -1,
+    debug_level = -1,
     nugget = FALSE,
     cloud = FALSE
   )
 
-  rtop_obj <- createRtopObject(
+  rtop_obj <- utop_object(
     fixture$observations,
     fixture$prediction_locations,
-    formulaString = obs ~ 1,
+    formula = obs ~ 1,
     params = params
   )
-  rtop_obj <- rtopVariogram(rtop_obj)
+  rtop_obj <- utop_variogram(rtop_obj)
 
-  expect_s3_class(rtop_obj$variogram, "rtopVariogram")
-  expect_true(all(rtop_obj$variogram$np %% length(fixture$time) == 0))
-  expect_gt(max(rtop_obj$variogram$np), length(fixture$time))
+  expect_true(S7::S7_inherits(rtop_obj@variogram, UtopVariogram))
+  expect_true(all(rtop_obj@variogram@data$np %% length(fixture$time) == 0))
+  expect_gt(max(rtop_obj@variogram@data$np), length(fixture$time))
 
-  rtop_obj <- rtopFitVariogram(rtop_obj, iprint = -1)
-  result <- rtopKrige(rtop_obj)
-  predictions <- result$predictions
+  rtop_obj <- utop_fit_variogram(rtop_obj, iprint = -1)
+  result <- utop_krige(rtop_obj)
+  predictions <- result@predictions
 
   expect_s3_class(predictions, "stars")
   expect_equal(unname(dim(predictions))[1], 3)
