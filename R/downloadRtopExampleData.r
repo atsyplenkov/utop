@@ -27,7 +27,7 @@
 #'   observations <- st_read(rpath,"observations")
 #' }
 #'
-#' @export
+#' @noRd
 downloadRtopExampleData <- function(
   folder = system.file("extdata", package = "utop")
 ) {

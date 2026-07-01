@@ -13,9 +13,8 @@ errorBar <- function(x, y, upper, lower = upper, length = 0.1, ...) {
   arrows(x, y + upper, x, y - lower, angle = 90, code = 3, length = length, ...)
 }
 
-#' @export
-#' @rdname checkVario
-checkVario.rtop <- function(
+#' @noRd
+compute_check_variogram <- function(
   object,
   acor = 1,
   log = "xy",
@@ -26,7 +25,11 @@ checkVario.rtop <- function(
   params = list(),
   ...
 ) {
-  params <- getRtopParams(object$params, newPar = params, ...)
+  if (S7::S7_inherits(object$params, UtopParams)) {
+    params_obj <- utop_params(object$params, new_params = params, ...)
+  } else {
+    params_obj <- coerce_utop_params(object$params, newPar = params, ...)
+  }
   dots <- list(...)
 
   askpar <- par("ask")
@@ -35,7 +38,11 @@ checkVario.rtop <- function(
   } else {
     par("ask" = FALSE)
   }
-  variogramModel <- object$variogramModel
+  variogramModel <- if (S7::S7_inherits(object$variogramModel, UtopVariogramModel)) {
+    coerce_variogram_model(object$variogramModel)
+  } else {
+    object$variogramModel
+  }
   # variogram preferred as sampleVariogram, if not variogramCloud (if exisiting, NULL otherwise)
   sampleVariogram <- object$variogram
   if (is.null(sampleVariogram)) {
@@ -43,7 +50,7 @@ checkVario.rtop <- function(
   }
   observations <- object$observations
   formulaString <- object$formulaString
-  amul <- object$params$amul
+  amul <- params_obj@amul
   varFit <- object$varFit
   abins <- adfunc(NULL, observations, amul)
   observations$acl <- findInterval(observations$area, abins)
@@ -78,14 +85,18 @@ checkVario.rtop <- function(
   )
 
   print(paste("cloud is ", cloud))
-  if (cloud || is(sampleVariogram, "rtopVariogramCloud")) {
+  if (cloud || variogram_is_cloud(sampleVariogram)) {
     print("Creating cloud variogram; this might take some time")
-    if (!is(sampleVariogram, "rtopVariogramCloud")) {
+    if (!variogram_is_cloud(sampleVariogram)) {
       if (!("variogramCloud" %in% names(object))) {
-        object$variogramCloud <- rtopVariogram(
+        vario_cloud <- utop_variogram(
           observations,
-          formulaString,
-          params,
+          formula = formulaString,
+          params = params_obj,
+          cloud = TRUE
+        )
+        object$variogramCloud <- utop_tag_variogram_class(
+          utop_variogram_data(vario_cloud),
           cloud = TRUE
         )
       }
@@ -94,12 +105,12 @@ checkVario.rtop <- function(
       clvar <- sampleVariogram
     }
     if (gDist) {
-      if (!("gdistObs" %in% names(object))) {
+      if (!("gDistObs" %in% names(object))) {
         if (!("dObs" %in% names(object))) {
-          object$dObs <- rtopDisc(observations, params = params)
+          object$dObs <- utop_disc(observations, params = params_obj)
         }
         dObs <- object$dObs
-        object$gDistObs <- gDist(dObs, dObs, params = params)
+        object$gDistObs <- compute_g_dist_list(dObs, dObs, params = params_obj)
       }
       gdists <- object$gDistObs
       gDiag <- diag(gdists)
@@ -115,14 +126,14 @@ checkVario.rtop <- function(
       dots$identify <- FALSE
     }
     cdots <- which(
-      names(dots) %in% names(formals(checkVario.rtopVariogramModel))
+      names(dots) %in% names(formals(compute_check_variogram_model))
     )
     if (length(cdots) > 0) {
       dots <- dots[-cdots]
     }
     print(plot(clvar, xlab = "distance", unlist(dots)))
   }
-  if (!is.null(varFit) && is(sampleVariogram, "rtopVariogram")) {
+  if (!is.null(varFit) && !variogram_is_cloud(sampleVariogram)) {
     gammar <- varFit[, c("np", "gamma", "gammar")]
     gammar$nnp <- sqrt(gammar$np) / max(sqrt(gammar$np)) * 20
     gmax <- max(gammar[, c("gamma", "gammar")])
@@ -139,7 +150,7 @@ checkVario.rtop <- function(
       log = log
     )
     abline(0, 1)
-  } else if (!is.null(varFit) && is(sampleVariogram, "rtopVariogramCloud")) {
+  } else if (!is.null(varFit) && variogram_is_cloud(sampleVariogram)) {
     gammar <- varFit[, c("np", "gamma", "gammar")]
     gammar <- gammar[order(gammar$gamma), ]
     ng <- dim(gammar)[1]
@@ -179,23 +190,14 @@ checkVario.rtop <- function(
   }
   if (is.null(variogramModel)) {
     if (is.null(sampleVariogram)) {
-      sampleVariogram <- rtopVariogram(observations)
+      sampleVariogram <- utop_variogram(observations, params = params_obj)
     }
-    checkVario(
-      sampleVariogram,
-      observations,
-      params = params,
-      log = log,
-      curveSmooth = curveSmooth,
-      acomp = acomp,
-      ...
-    )
   } else {
     if (is.null(sampleVariogram)) {
-      object$checkVario <- checkVario(
+      object$checkVario <- compute_check_variogram_model(
         object$variogramModel,
         observations = object$observations,
-        params = params,
+        params = params_obj,
         acor = acor,
         log = log,
         curveSmooth = curveSmooth,
@@ -203,11 +205,11 @@ checkVario.rtop <- function(
         ...
       )
     } else {
-      object$checkVario <- checkVario(
+      object$checkVario <- compute_check_variogram_model(
         object$variogramModel,
         sampleVariogram = sampleVariogram,
         observations = object$observations,
-        params = params,
+        params = params_obj,
         acor = acor,
         log = log,
         curveSmooth = curveSmooth,
@@ -220,10 +222,8 @@ checkVario.rtop <- function(
   invisible(object)
 }
 
-
-#' @export
-#' @rdname checkVario
-checkVario.rtopVariogramModel <- function(
+#' @noRd
+compute_check_variogram_model <- function(
   object,
   sampleVariogram = NULL,
   observations = NULL,
@@ -240,8 +240,14 @@ checkVario.rtopVariogramModel <- function(
   curveSmooth = FALSE,
   ...
 ) {
-  variogramModel <- object
-  params <- getRtopParams(params, ...)
+  if (S7::S7_inherits(object, UtopVariogramModel)) {
+    variogramModel <- coerce_variogram_model(object)
+    variogram_model_s7 <- object
+  } else {
+    variogramModel <- object
+    variogram_model_s7 <- utop_variogram_model_from_rtop(object)
+  }
+  params_obj <- coerce_utop_params(params, ...)
   askpar <- par("ask")
   if (dev.interactive()) {
     par("ask" = TRUE)
@@ -250,10 +256,10 @@ checkVario.rtopVariogramModel <- function(
   }
 
   if (is.null(areas)) {
-    areas <- params$amul
+    areas <- params_obj@amul
   }
   if (is.null(dists)) {
-    dists <- params$dmul
+    dists <- params_obj@dmul
   }
 
   if (length(areas) == 1) {
@@ -296,7 +302,7 @@ checkVario.rtopVariogramModel <- function(
     if (is.null(acomp)) {
       acomp <- 5
     }
-    if (!is.null(sampleVariogram) && is(sampleVariogram, "rtopVariogram")) {
+    if (!is.null(sampleVariogram) && !variogram_is_cloud(sampleVariogram)) {
       samp <- aggregate(
         sampleVariogram$np,
         by = list(acl1 = sampleVariogram$acl1, acl2 = sampleVariogram$acl2),
@@ -326,22 +332,22 @@ checkVario.rtopVariogramModel <- function(
       unique(c((i1 - 1) * ld + 1, ((i2 - 1) * ld + 1):(i2 * ld))),
     ]
     poly1$obs <- seq_len(nrow(poly1))
-    lobject <- createRtopObject(poly1, params = params, formulaString = obs ~ 1)
-    lobject$variogramModel <- variogramModel
     nadists <- adists
     if (i1 != i2) {
       nadists <- c(0, nadists)
     }
+    lobject <- utop_object(poly1, params = params_obj, formula = obs ~ 1)
+    lobject@variogram_model <- variogram_model_s7
     overlapObs <- findVarioOverlap(data.frame(
       a1 = utop_area(poly1[1, ]),
       a2 = utop_area(poly1[2, ]),
       dist = nadists
     ))
-    lobject$overlapObs <- t(matrix(
+    lobject@overlap_obs <- t(matrix(
       rep(overlapObs, ld + (i1 != i2)),
       ncol = ld + (i1 != i2)
     ))
-    vmat <- varMat(lobject, cv = TRUE)$varMatObs
+    vmat <- utop_var_mat(lobject, params = list(cv = TRUE))@var_mat_obs
     #  vmat = varMat(poly1,variogramModel = variogramModel, params = params)
     #  vmat = vmat-diag(vmat)
     #    vmats[iplot,] = vmat[1,2:ld]
@@ -353,7 +359,7 @@ checkVario.rtopVariogramModel <- function(
     }
   }
 
-  if (inherits(sampleVariogram, "rtopVariogramCloud")) {
+  if (variogram_is_cloud(sampleVariogram)) {
     xmin <- min(sampleVariogram$dist) / 1.3
   } else {
     xmin <- min(sampleVariogram$dist[sampleVariogram$np > 2] / 1.3)
@@ -453,7 +459,7 @@ checkVario.rtopVariogramModel <- function(
     )
     legende$col <- c(legende$col, lcol)
     legende$lty <- c(legende$lty, lt)
-    if (!is.null(sampleVariogram) && is(sampleVariogram, "rtopVariogram")) {
+    if (!is.null(sampleVariogram) && !variogram_is_cloud(sampleVariogram)) {
       ppts <- sampleVariogram[
         sampleVariogram$acl2 == i1 & sampleVariogram$acl1 == i2,
       ]
@@ -516,12 +522,3 @@ checkVario.rtopVariogramModel <- function(
   options(warn = warn$warn)
   invisible(checkVarioRes)
 }
-
-
-#' @export
-#' @rdname checkVario
-checkVario.rtopVariogram <- function(object, ...) {}
-
-#' @export
-#' @rdname checkVario
-checkVario.rtopVariogramCloud <- function(object, ...) {}

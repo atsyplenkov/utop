@@ -40,10 +40,14 @@
 #' @aliases UtopVariogramModel
 #' @rawNamespace if (getRversion() < "4.3.0") importFrom("S7", "@")
 #' @importFrom S7 S7_dispatch S7_inherits class_any class_character
-#' @importFrom S7 class_data.frame class_formula class_logical class_numeric
-#' @importFrom S7 method methods_register new_class new_generic
-#' @importFrom S7 new_property prop
+#' @importFrom S7 class_data.frame class_formula class_list class_logical
+#' @importFrom S7 class_numeric method methods_register new_class new_generic
+#' @importFrom S7 new_property new_S3_class prop
 NULL
+
+utop_sf_class <- S7::new_S3_class("sf")
+utop_stars_class <- S7::new_S3_class("stars")
+utop_matrix_class <- S7::new_S3_class(c("matrix", "array"))
 
 utop_optional <- function(class = S7::class_any) {
   S7::new_property(NULL | class, default = NULL)
@@ -89,7 +93,22 @@ UtopParams <- S7::new_class(
       default = if (interactive()) 1 else 0
     ),
     par_init = utop_optional()
-  )
+  ),
+  validator = function(self) {
+    if (length(self@model) != 1L) {
+      return("model must be a character scalar")
+    }
+    if (!self@model %in% c("Exp", "Sph", "Gau", "Sp1", "Ex1", "Fra")) {
+      return(paste("model", self@model, "not implemented"))
+    }
+    if (length(self@cloud) != 1L) {
+      return("cloud must be a logical scalar")
+    }
+    if (length(self@r_resol) != 1L || self@r_resol <= 0) {
+      return("r_resol must be a positive number")
+    }
+    NULL
+  }
 )
 
 #' @rdname utop-s7-classes
@@ -102,7 +121,16 @@ UtopVariogramModel <- S7::new_class(
     params = S7::new_property(S7::class_numeric, default = c(1, 1, 0, 0, 1)),
     ss_err = utop_optional(S7::class_numeric),
     criterion = utop_optional()
-  )
+  ),
+  validator = function(self) {
+    if (length(self@model) != 1L) {
+      return("model must be a character scalar")
+    }
+    if (!is.numeric(self@params) || length(self@params) == 0L) {
+      return("params must be a non-empty numeric vector")
+    }
+    NULL
+  }
 )
 
 #' @rdname utop-s7-classes
@@ -110,13 +138,24 @@ UtopVariogramModel <- S7::new_class(
 UtopVariogram <- S7::new_class(
   "UtopVariogram",
   package = "utop",
-  constructor = function(data = NULL) {
-    if (is.null(data)) {
-      data <- data.frame()
-    }
+  constructor = function(data = data.frame()) {
     S7::new_object(S7::S7_object(), data = data)
   },
-  properties = list(data = S7::new_property(S7::class_data.frame))
+  properties = list(data = S7::new_property(S7::class_data.frame)),
+  validator = function(self) {
+    if (nrow(self@data) == 0L) {
+      return(NULL)
+    }
+    required <- c("np", "dist", "gamma", "a1", "a2")
+    missing <- setdiff(required, names(self@data))
+    if (length(missing) > 0L) {
+      return(paste(
+        "missing variogram columns:",
+        paste(missing, collapse = ", ")
+      ))
+    }
+    NULL
+  }
 )
 
 #' @rdname utop-s7-classes
@@ -124,10 +163,7 @@ UtopVariogram <- S7::new_class(
 UtopVariogramCloud <- S7::new_class(
   "UtopVariogramCloud",
   package = "utop",
-  constructor = function(data = NULL) {
-    if (is.null(data)) {
-      data <- data.frame()
-    }
+  constructor = function(data = data.frame()) {
     S7::new_object(S7::S7_object(), data = data)
   },
   properties = list(data = S7::new_property(S7::class_data.frame))
@@ -142,7 +178,7 @@ Utop <- S7::new_class(
     observations = utop_optional(),
     prediction_locations = utop_optional(),
     formula = utop_optional(S7::class_formula),
-    params = utop_optional(UtopParams),
+    params = S7::new_property(UtopParams),
     variogram = utop_optional(UtopVariogram),
     variogram_cloud = utop_optional(UtopVariogramCloud),
     variogram_model = utop_optional(UtopVariogramModel),
@@ -168,237 +204,3 @@ Utop <- S7::new_class(
     check_vario = utop_optional()
   )
 )
-
-utop_param_names <- c(
-  model = "model",
-  nugget = "nugget",
-  unc = "unc",
-  r_resol = "rresol",
-  h_resol = "hresol",
-  rs_type = "rstype",
-  hs_type = "hstype",
-  cloud = "cloud",
-  amul = "amul",
-  dmul = "dmul",
-  fit_method = "fit.method",
-  g_dist_est = "gDistEst",
-  g_dist_pred = "gDistPred",
-  var_clean = "varClean",
-  max_dist = "maxdist",
-  n_max = "nmax",
-  n_clus = "nclus",
-  cn_areas = "cnAreas",
-  clus_type = "clusType",
-  outfile = "outfile",
-  partial_overlap = "partialOverlap",
-  wlim = "wlim",
-  wlim_method = "wlimMethod",
-  singular_solve = "singularSolve",
-  uk_trend_support = "ukTrendSupport",
-  cv = "cv",
-  debug_level = "debug.level",
-  par_init = "parInit"
-)
-
-utop_object_names <- c(
-  observations = "observations",
-  prediction_locations = "predictionLocations",
-  formula = "formulaString",
-  predictions = "predictions",
-  simulations = "simulations",
-  d_obs = "dObs",
-  d_pred = "dPred",
-  g_dist_obs = "gDistObs",
-  g_dist_pred = "gDistPred",
-  g_dist_pred_obs = "gDistPredObs",
-  g_dist_bin = "gDistBin",
-  d_bin = "dBin",
-  overlap_obs = "overlapObs",
-  overlap_pred_obs = "overlapPredObs",
-  var_mat_obs = "varMatObs",
-  var_mat_pred_obs = "varMatPredObs",
-  var_mat_pred = "varMatPred",
-  var_fit = "varFit",
-  cv_info = "cvInfo",
-  weight = "weight",
-  removed = "removed",
-  uk_residual = "ukResidual",
-  check_vario = "checkVario"
-)
-
-utop_get <- function(x, name) {
-  if (name %in% names(x)) {
-    x[[name]]
-  } else {
-    NULL
-  }
-}
-
-utop_params_from_list <- function(x) {
-  if (S7::S7_inherits(x, UtopParams)) {
-    return(x)
-  }
-
-  args <- list()
-  for (new_name in names(utop_param_names)) {
-    old_name <- unname(utop_param_names[[new_name]])
-    if (old_name %in% names(x)) {
-      args[[new_name]] <- x[[old_name]]
-    }
-  }
-  do.call(UtopParams, args)
-}
-
-utop_params_to_list <- function(x) {
-  if (is.null(x)) {
-    return(NULL)
-  }
-  if (!S7::S7_inherits(x, UtopParams)) {
-    return(x)
-  }
-
-  out <- list()
-  for (new_name in names(utop_param_names)) {
-    old_name <- unname(utop_param_names[[new_name]])
-    value <- S7::prop(x, new_name)
-    if (!is.null(value)) {
-      out[[old_name]] <- value
-    }
-  }
-  class(out) <- "rtopParams"
-  out
-}
-
-utop_variogram_from_legacy <- function(x) {
-  if (is.null(x) || S7::S7_inherits(x, UtopVariogram)) {
-    return(x)
-  }
-  data <- x
-  class(data) <- "data.frame"
-  UtopVariogram(data = data)
-}
-
-utop_variogram_to_legacy <- function(x) {
-  if (is.null(x)) {
-    return(NULL)
-  }
-  if (!S7::S7_inherits(x, UtopVariogram)) {
-    return(x)
-  }
-  data <- x@data
-  class(data) <- c("rtopVariogram", "data.frame")
-  data
-}
-
-utop_variogram_cloud_from_legacy <- function(x) {
-  if (is.null(x) || S7::S7_inherits(x, UtopVariogramCloud)) {
-    return(x)
-  }
-  data <- x
-  class(data) <- "data.frame"
-  UtopVariogramCloud(data = data)
-}
-
-utop_variogram_cloud_to_legacy <- function(x) {
-  if (is.null(x)) {
-    return(NULL)
-  }
-  if (!S7::S7_inherits(x, UtopVariogramCloud)) {
-    return(x)
-  }
-  data <- x@data
-  class(data) <- c("rtopVariogramCloud", "data.frame")
-  data
-}
-
-utop_variogram_model_from_legacy <- function(x) {
-  if (is.null(x) || S7::S7_inherits(x, UtopVariogramModel)) {
-    return(x)
-  }
-
-  UtopVariogramModel(
-    model = x$model,
-    params = x$params,
-    ss_err = attr(x, "SSErr", exact = TRUE),
-    criterion = attr(x, "criterion", exact = TRUE)
-  )
-}
-
-utop_variogram_model_to_legacy <- function(x) {
-  if (is.null(x)) {
-    return(NULL)
-  }
-  if (!S7::S7_inherits(x, UtopVariogramModel)) {
-    return(x)
-  }
-
-  out <- list(model = x@model, params = x@params)
-  class(out) <- "rtopVariogramModel"
-  if (!is.null(x@ss_err)) {
-    attr(out, "SSErr") <- x@ss_err
-  }
-  if (!is.null(x@criterion)) {
-    attr(out, "criterion") <- x@criterion
-  }
-  out
-}
-
-utop_from_rtop <- function(x) {
-  if (S7::S7_inherits(x, Utop)) {
-    return(x)
-  }
-
-  args <- list(
-    params = utop_params_from_list(utop_get(x, "params")),
-    variogram = utop_variogram_from_legacy(utop_get(x, "variogram")),
-    variogram_cloud = utop_variogram_cloud_from_legacy(utop_get(
-      x,
-      "variogramCloud"
-    )),
-    variogram_model = utop_variogram_model_from_legacy(utop_get(
-      x,
-      "variogramModel"
-    ))
-  )
-
-  for (new_name in names(utop_object_names)) {
-    old_name <- unname(utop_object_names[[new_name]])
-    value <- utop_get(x, old_name)
-    if (!is.null(value)) {
-      args[[new_name]] <- value
-    }
-  }
-
-  do.call(Utop, args)
-}
-
-utop_to_rtop <- function(x) {
-  if (!S7::S7_inherits(x, Utop)) {
-    return(x)
-  }
-
-  out <- list()
-  if (!is.null(x@params)) {
-    out$params <- utop_params_to_list(x@params)
-  }
-  if (!is.null(x@variogram)) {
-    out$variogram <- utop_variogram_to_legacy(x@variogram)
-  }
-  if (!is.null(x@variogram_cloud)) {
-    out$variogramCloud <- utop_variogram_cloud_to_legacy(x@variogram_cloud)
-  }
-  if (!is.null(x@variogram_model)) {
-    out$variogramModel <- utop_variogram_model_to_legacy(x@variogram_model)
-  }
-
-  for (new_name in names(utop_object_names)) {
-    old_name <- unname(utop_object_names[[new_name]])
-    value <- S7::prop(x, new_name)
-    if (!is.null(value)) {
-      out[[old_name]] <- value
-    }
-  }
-
-  class(out) <- "rtop"
-  out
-}
