@@ -2,7 +2,7 @@ _default:
     just --list
 
 # Format R code
-format:
+fmt:
     air format .
 
 # Run jarl linter on the R package
