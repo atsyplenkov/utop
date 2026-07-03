@@ -144,10 +144,10 @@ fit_variogram_cloud <- function(
 }
 
 #' @noRd
-fit_variogram_impl <- function(state, params = list(), iprint = 0, ...) {
-  state$params <- utop_params(
-    state$params,
-    new_params = params,
+fit_variogram_impl <- function(state, params = NULL, iprint = 0, ...) {
+  state$params <- utop_replace_params(
+    current = state$params,
+    params = params,
     observations = state$observations,
     formula = state$formula
   )
@@ -231,8 +231,8 @@ fit_variogram_impl <- function(state, params = list(), iprint = 0, ...) {
 #' Fit a variogram model
 #'
 #' @param object A [Utop], [UtopVariogram], or [UtopVariogramCloud] object.
-#' @param ... Method-specific arguments. For [Utop] objects, `params` and
-#'   `iprint` control parameter updates and optimiser verbosity.
+#' @param ... Method-specific arguments. For [Utop] objects, `iprint`
+#'   controls optimiser verbosity.
 #'
 #' @return A fitted object.
 #' @export
@@ -246,7 +246,7 @@ utop_fit_variogram <- S7::new_generic(
 
 S7::method(utop_fit_variogram, Utop) <- function(
   object,
-  params = list(),
+  params = NULL,
   iprint = 0,
   ...
 ) {
@@ -261,26 +261,22 @@ S7::method(utop_fit_variogram, Utop) <- function(
 
 S7::method(utop_fit_variogram, UtopVariogram) <- function(
   object,
-  params = UtopParams(),
+  params = NULL,
   iprint = 0,
   ...
 ) {
-  if (!S7::S7_inherits(params, UtopParams)) {
-    params <- utop_params(params, ...)
-  }
+  params <- utop_require_params(params)
   fit_variogram_binned(object, params = params, iprint = iprint, ...)$model
 }
 
 S7::method(utop_fit_variogram, UtopVariogramCloud) <- function(
   object,
   observations,
-  params = UtopParams(),
+  params = NULL,
   iprint = 0,
   ...
 ) {
-  if (!S7::S7_inherits(params, UtopParams)) {
-    params <- utop_params(params, ...)
-  }
+  params <- utop_require_params(params, observations = observations)
   fit_variogram_cloud(
     object,
     observations = observations,
@@ -292,26 +288,22 @@ S7::method(utop_fit_variogram, UtopVariogramCloud) <- function(
 
 S7::method(utop_fit_variogram, utop_sf_class) <- function(
   object,
-  params = UtopParams(),
+  params = NULL,
   iprint = 0,
   ...
 ) {
-  if (!S7::S7_inherits(params, UtopParams)) {
-    params <- utop_params(params, ...)
-  }
+  params <- utop_require_params(params, observations = object)
   vario <- utop_variogram(object, params = params, ...)
   utop_fit_variogram(vario, params = params, iprint = iprint, ...)
 }
 
 S7::method(utop_fit_variogram, utop_stars_class) <- function(
   object,
-  params = UtopParams(),
+  params = NULL,
   iprint = 0,
   ...
 ) {
-  if (!S7::S7_inherits(params, UtopParams)) {
-    params <- utop_params(params, ...)
-  }
+  params <- utop_require_params(params, observations = object)
   vario <- utop_variogram(object, params = params, ...)
   utop_fit_variogram(vario, params = params, iprint = iprint, ...)
 }

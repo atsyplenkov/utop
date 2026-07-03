@@ -2,20 +2,31 @@
 compute_krige_utop <- function(
   object,
   var_mat_update = FALSE,
-  params = list(),
+  params = NULL,
   ...
 ) {
   split <- utop_krige_extra_params(params, ...)
-  object@params <- utop_params(object@params, new_params = split$params)
+  object@params <- utop_replace_params(
+    current = object@params,
+    params = split$params,
+    observations = object@observations,
+    formula = object@formula
+  )
   params_for_compute <- utop_krige_apply_runtime(object@params, split$runtime)
   runtime <- utop_krige_runtime_only(split$runtime)
 
   if (!is.null(runtime$nsim) && runtime$nsim > 0) {
-    return(compute_sim_utop(
-      object,
-      var_mat_update = var_mat_update,
-      params = params,
-      ...
+    return(do.call(
+      compute_sim_utop,
+      c(
+        list(
+          object = object,
+          var_mat_update = var_mat_update,
+          params = split$params
+        ),
+        split$runtime,
+        split$dots
+      )
     ))
   }
 
@@ -24,11 +35,16 @@ compute_krige_utop <- function(
       is.null(object@var_mat_pred_obs) ||
       var_mat_update
   ) {
-    object <- utop_var_mat(
-      object,
-      var_mat_update = var_mat_update,
-      params = split$params,
-      split$dots
+    object <- do.call(
+      utop_var_mat,
+      c(
+        list(
+          object = object,
+          var_mat_update = var_mat_update,
+          params = object@params
+        ),
+        split$dots
+      )
     )
   }
 
@@ -85,7 +101,7 @@ utop_krige <- S7::new_generic(
 S7::method(utop_krige, Utop) <- function(
   object,
   var_mat_update = FALSE,
-  params = list(),
+  params = NULL,
   ...
 ) {
   compute_krige_utop(
@@ -101,8 +117,7 @@ utop_krige_apply_runtime <- function(params, runtime) {
   if (length(runtime) == 0L) {
     return(params)
   }
-  runtime <- utop_params_apply_aliases(runtime)
-  updates <- runtime[intersect(names(runtime), names(S7::props(params)))]
+  updates <- runtime[intersect(names(runtime), utop_param_fields())]
   if (length(updates) > 0L) {
     params <- update_utop_params(params, updates)
   }
@@ -111,6 +126,10 @@ utop_krige_apply_runtime <- function(params, runtime) {
 
 #' @noRd
 utop_krige_runtime_only <- function(runtime) {
+  if ("lag_exact" %in% names(runtime)) {
+    runtime$lagExact <- runtime$lag_exact
+    runtime$lag_exact <- NULL
+  }
   krige_only <- c("nsim", "lambda", "olags", "plags", "lagExact", "sel", "wret")
   runtime[intersect(names(runtime), krige_only)]
 }
@@ -120,31 +139,27 @@ utop_krige_extra_params <- function(params, ...) {
   dots <- list(...)
   runtime_names <- c(
     "cv",
-    "wlim",
-    "wlimMethod",
-    "wlim_method",
-    "nmax",
-    "n_max",
-    "maxdist",
-    "max_dist",
     "nsim",
     "lambda",
-    "singularSolve",
-    "singular_solve",
     "olags",
     "plags",
-    "lagExact",
+    "lag_exact",
     "sel",
     "wret"
   )
-  if (is.null(params)) {
-    params <- list()
-  }
-  runtime <- c(params, dots)
-  runtime <- runtime[intersect(names(runtime), runtime_names)]
-  utop_updates <- params[!names(params) %in% runtime_names]
+  runtime <- dots[intersect(names(dots), runtime_names)]
   dots <- dots[!names(dots) %in% runtime_names]
-  list(params = utop_updates, runtime = runtime, dots = dots)
+
+  inline_params <- intersect(names(dots), utop_param_fields())
+  if (length(inline_params) > 0L) {
+    stop(
+      "pass utop parameters via a UtopParams object in `params`, not as individual arguments: ",
+      paste(inline_params, collapse = ", "),
+      call. = FALSE
+    )
+  }
+
+  list(params = params, runtime = runtime, dots = dots)
 }
 
 S7::method(utop_krige, utop_sf_class) <- function(
@@ -157,13 +172,11 @@ S7::method(utop_krige, utop_sf_class) <- function(
   ...
 ) {
   split <- utop_krige_extra_params(params, ...)
-  params_obj <- if (is.null(split$params)) {
-    UtopParams()
-  } else if (S7::S7_inherits(split$params, UtopParams)) {
-    split$params
-  } else {
-    utop_params(split$params)
-  }
+  params_obj <- utop_require_params(
+    split$params,
+    observations = object,
+    formula = formula
+  )
   utop_obj <- utop_object(
     observations = object,
     prediction_locations = prediction_locations,
@@ -174,7 +187,7 @@ S7::method(utop_krige, utop_sf_class) <- function(
     utop_obj@var_mat_obs <- var_mat_obs
     model <- attr(var_mat_obs, "variogramModel", exact = TRUE)
     if (!is.null(model) && is.null(utop_obj@variogram_model)) {
-      utop_obj@variogram_model <- utop_variogram_model_from_rtop(model)
+      utop_obj@variogram_model <- utop_variogram_model_from_list(model)
     }
   }
   if (!is.null(var_mat_pred_obs)) {
@@ -193,13 +206,11 @@ S7::method(utop_krige, utop_stars_class) <- function(
   ...
 ) {
   split <- utop_krige_extra_params(params, ...)
-  params_obj <- if (is.null(split$params)) {
-    UtopParams()
-  } else if (S7::S7_inherits(split$params, UtopParams)) {
-    split$params
-  } else {
-    utop_params(split$params)
-  }
+  params_obj <- utop_require_params(
+    split$params,
+    observations = object,
+    formula = formula
+  )
   utop_obj <- utop_object(
     observations = object,
     prediction_locations = prediction_locations,
@@ -210,7 +221,7 @@ S7::method(utop_krige, utop_stars_class) <- function(
     utop_obj@var_mat_obs <- var_mat_obs
     model <- attr(var_mat_obs, "variogramModel", exact = TRUE)
     if (!is.null(model) && is.null(utop_obj@variogram_model)) {
-      utop_obj@variogram_model <- utop_variogram_model_from_rtop(model)
+      utop_obj@variogram_model <- utop_variogram_model_from_list(model)
     }
   }
   if (!is.null(var_mat_pred_obs)) {

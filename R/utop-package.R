@@ -37,7 +37,7 @@
 #' prediction_locations = st_read(rpath, "predictionLocations")
 #'
 #' observations$obs = observations$QSUMMER_OB / observations$AREASQKM
-#' params = list(g_dist_est = TRUE, g_dist_pred = TRUE, cloud = TRUE)
+#' params = utop_params(g_dist_est = TRUE, g_dist_pred = TRUE, cloud = TRUE)
 #' utop_obj = utop_object(observations, prediction_locations, params = params)
 #' }
 #'

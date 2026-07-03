@@ -1,9 +1,12 @@
 #' @noRd
-findOverlap <- function(areas1, areas2, debug.level = 1, ...) {
-  dots <- list(...)
-  olim <- if ("olim" %in% names(dots)) dots$olim else 1e-4
-  params <- coerce_utop_params(...)
-  partialOverlap <- params@partial_overlap
+findOverlap <- function(
+  areas1,
+  areas2,
+  debug.level = 1,
+  partial_overlap = TRUE,
+  olim = 1e-4
+) {
+  partial_overlap_flag <- partial_overlap
 
   areas1 <- utop_add_area(areas1)
   if (missing(areas2)) {
@@ -20,7 +23,7 @@ findOverlap <- function(areas1, areas2, debug.level = 1, ...) {
   iareas <- utop_area(areas1)
   jareas <- utop_area(areas2)
 
-  if (partialOverlap) {
+  if (partial_overlap_flag) {
     for (ia in seq_len(ndim)) {
       ifi <- if (sym) ia else 1
       for (ib in ifi:mdim) {
@@ -100,7 +103,7 @@ find_overlap <- function(
     areas1,
     areas2,
     debug.level = debug.level,
-    partialOverlap = partial_overlap,
+    partial_overlap = partial_overlap,
     ...
   )
 }

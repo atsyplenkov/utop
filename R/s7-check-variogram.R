@@ -36,10 +36,15 @@ utop_check_variogram_state <- function(object) {
 }
 
 #' @noRd
-compute_check_variogram_utop <- function(object, params = list(), ...) {
-  object@params <- utop_params(object@params, new_params = params, ...)
+compute_check_variogram_utop <- function(object, params = NULL, ...) {
+  object@params <- utop_replace_params(
+    current = object@params,
+    params = params,
+    observations = object@observations,
+    formula = object@formula
+  )
   state <- utop_check_variogram_state(object)
-  state <- compute_check_variogram(state, params = list(), ...)
+  state <- compute_check_variogram(state, params = object@params, ...)
   if ("checkVario" %in% names(state)) {
     object@check_vario <- state$checkVario
   }
@@ -49,8 +54,8 @@ compute_check_variogram_utop <- function(object, params = list(), ...) {
 #' Create diagnostic variogram checks
 #'
 #' @param object A [Utop] object or [UtopVariogramModel].
-#' @param ... Method-specific arguments. For [Utop] objects, `params` updates
-#'   parameters.
+#' @param ... Method-specific arguments. For [Utop] objects, supply `params`
+#'   as a [UtopParams] object.
 #'
 #' @return An updated diagnostic object.
 #' @export
@@ -62,11 +67,7 @@ utop_check_variogram <- S7::new_generic(
   }
 )
 
-S7::method(utop_check_variogram, Utop) <- function(
-  object,
-  params = list(),
-  ...
-) {
+S7::method(utop_check_variogram, Utop) <- function(object, params = NULL, ...) {
   compute_check_variogram_utop(object, params = params, ...)
 }
 

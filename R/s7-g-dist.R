@@ -45,8 +45,8 @@ compute_g_dist_list <- function(
 }
 
 #' @noRd
-compute_g_dist_sf <- function(object, object2 = NULL, ...) {
-  params <- UtopParams()
+compute_g_dist_sf <- function(object, object2 = NULL, params = NULL, ...) {
+  params <- utop_require_params(params)
   d_obs <- utop_disc(object, params = params, ...)
   g_dist_obs <- compute_g_dist_list(d_obs, params = params, ...)
   if (!is.null(object2)) {
@@ -70,8 +70,8 @@ compute_g_dist_sf <- function(object, object2 = NULL, ...) {
 #' Compute geostatistical distances
 #'
 #' @param object A [Utop] object, spatial object, or discretisation list.
-#' @param ... Method-specific arguments. For [Utop] objects, `params` updates
-#'   parameters.
+#' @param ... Method-specific arguments. For [Utop] objects and spatial
+#'   inputs, supply `params` as a [UtopParams] object.
 #'
 #' @return Geostatistical distances.
 #' @export
@@ -83,8 +83,13 @@ utop_g_dist <- S7::new_generic(
   }
 )
 
-S7::method(utop_g_dist, Utop) <- function(object, params = list(), ...) {
-  object@params <- utop_params(object@params, new_params = params, ...)
+S7::method(utop_g_dist, Utop) <- function(object, params = NULL, ...) {
+  object@params <- utop_replace_params(
+    current = object@params,
+    params = params,
+    observations = object@observations,
+    formula = object@formula
+  )
   debug.level <- if (object@params@debug_level > 1) {
     object@params@debug_level
   } else {
@@ -134,21 +139,23 @@ S7::method(utop_g_dist, Utop) <- function(object, params = list(), ...) {
 S7::method(utop_g_dist, utop_sf_class) <- function(
   object,
   object2 = NULL,
+  params = NULL,
   ...
 ) {
-  compute_g_dist_sf(object, object2 = object2, ...)
+  compute_g_dist_sf(object, object2 = object2, params = params, ...)
 }
 
 S7::method(utop_g_dist, utop_stars_class) <- function(
   object,
   object2 = NULL,
+  params = NULL,
   ...
 ) {
   object <- utop_stars_support(object)
   if (!is.null(object2)) {
     object2 <- utop_as_sf(object2)
   }
-  compute_g_dist_sf(object, object2 = object2, ...)
+  compute_g_dist_sf(object, object2 = object2, params = params, ...)
 }
 
 S7::method(utop_g_dist, S7::class_list) <- function(

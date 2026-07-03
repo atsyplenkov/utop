@@ -82,49 +82,15 @@ find_par_init <- function(formula, observations, model) {
 
 #' Create utop parameters
 #'
-#' @param params Existing parameters as a list or [UtopParams] object.
-#' @param new_params Parameter values to update.
+#' @param ... Canonical utop parameter values supplied as named arguments.
 #' @param observations Optional observations used to infer starting values.
 #' @param formula Optional model formula.
-#' @param ... Individual parameter values.
 #'
 #' @return A [UtopParams] object.
 #' @export
-utop_params <- function(
-  params = NULL,
-  new_params = list(),
-  observations = NULL,
-  formula = NULL,
-  ...
-) {
-  values <- utop_params_apply_aliases(list(...))
-
-  if (S7::S7_inherits(params, UtopParams)) {
-    out <- params
-  } else {
-    out <- UtopParams()
-    if (is.list(params) && length(params) > 0L) {
-      out <- update_utop_params(out, utop_params_apply_aliases(params))
-    }
-  }
-
-  out <- update_utop_params(out, utop_params_apply_aliases(new_params))
+utop_params <- function(..., observations = NULL, formula = NULL) {
+  values <- utop_require_named_values(list(...))
+  out <- UtopParams()
   out <- update_utop_params(out, values)
-
-  if (is.null(out@par_init)) {
-    if (!is.null(observations)) {
-      if (is.null(formula)) {
-        formula <- as.formula(utop_default_formula(observations))
-      }
-      out@par_init <- find_par_init(
-        formula = formula,
-        observations = observations,
-        model = out@model
-      )
-    } else {
-      out@par_init <- find_par_init_default(out@model)
-    }
-  }
-
-  out
+  utop_complete_params(out, observations = observations, formula = formula)
 }

@@ -4,8 +4,8 @@
 # can be attributes of the areas and/or the reserved coordinate names
 # "x"/"y", which are filled from the support geometry. With areal support,
 # basis functions that vary within an area (coordinate-based terms) are
-# either evaluated at the centroid or block-averaged over the rtopDisc()
-# discretisation points, controlled by params$ukTrendSupport.
+# discretisation points, controlled by
+# params@uk_trend_support.
 
 #' @noRd
 ukTrendTerms <- function(formulaString) {
@@ -66,7 +66,7 @@ ukModelMatrix <- function(tt, data) {
 
 #' Evaluate the trend basis functions of the RHS of formulaString for a set
 #' of support areas, either at centroids or block-averaged over the
-#' discretisation points from rtopDisc()
+#' discretisation points from [utop_disc()]
 #' @noRd
 ukTrendMatrix <- function(
   formulaString,
@@ -74,7 +74,7 @@ ukTrendMatrix <- function(
   params = NULL,
   discPoints = NULL
 ) {
-  params <- coerce_utop_params(params)
+  params <- utop_require_params(params)
   tt <- ukTrendTerms(formulaString)
   nloc <- ukNLoc(locations)
   if (length(attr(tt, "term.labels")) == 0) {
@@ -91,7 +91,7 @@ ukTrendMatrix <- function(
   support <- params@uk_trend_support
   if (!support %in% c("centroid", "block")) {
     stop(paste(
-      "Unknown ukTrendSupport:",
+      "Unknown uk_trend_support:",
       support,
       "- must be \"centroid\" or \"block\""
     ))
@@ -115,14 +115,14 @@ ukTrendMatrix <- function(
     if (is.null(discPoints)) {
       if (!inherits(locations, "sf") && !inherits(locations, "stars")) {
         stop(paste(
-          "ukTrendSupport = \"block\" with coordinate-based trend terms",
+          "uk_trend_support = \"block\" with coordinate-based trend terms",
           "requires polygon supports or precomputed discretisation points"
         ))
       }
       loc_sf <- utop_as_sf(locations)
       if (!all(sf::st_dimension(loc_sf) == 2)) {
         stop(paste(
-          "ukTrendSupport = \"block\" with coordinate-based trend terms",
+          "uk_trend_support = \"block\" with coordinate-based trend terms",
           "requires polygon supports or precomputed discretisation points"
         ))
       }
@@ -175,7 +175,7 @@ ukTrendMatrix <- function(
 ukResiduals <- function(
   formulaString,
   locations = NULL,
-  params = list(),
+  params = NULL,
   discPoints = NULL,
   depValues = NULL,
   trendMatrix = NULL

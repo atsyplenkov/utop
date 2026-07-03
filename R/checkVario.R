@@ -22,14 +22,15 @@ compute_check_variogram <- function(
   gDist = TRUE,
   acomp = NULL,
   curveSmooth = FALSE,
-  params = list(),
+  params = NULL,
   ...
 ) {
-  if (S7::S7_inherits(object$params, UtopParams)) {
-    params_obj <- utop_params(object$params, new_params = params, ...)
-  } else {
-    params_obj <- coerce_utop_params(object$params, newPar = params, ...)
-  }
+  params_obj <- utop_replace_params(
+    current = object$params,
+    params = params,
+    observations = object$observations,
+    formula = object$formulaString
+  )
   dots <- list(...)
 
   askpar <- par("ask")
@@ -232,7 +233,7 @@ compute_check_variogram_model <- function(
   areas = NULL,
   dists = NULL,
   acomp = NULL,
-  params = list(),
+  params = NULL,
   compVars = list(),
   acor = 1,
   log = "xy",
@@ -247,9 +248,9 @@ compute_check_variogram_model <- function(
     variogram_model_s7 <- object
   } else {
     variogramModel <- object
-    variogram_model_s7 <- utop_variogram_model_from_rtop(object)
+    variogram_model_s7 <- utop_variogram_model_from_list(object)
   }
-  params_obj <- coerce_utop_params(params, ...)
+  params_obj <- utop_require_params(params, observations = observations)
   askpar <- par("ask")
   if (dev.interactive()) {
     par("ask" = TRUE)
@@ -349,7 +350,8 @@ compute_check_variogram_model <- function(
       rep(overlapObs, ld + (i1 != i2)),
       ncol = ld + (i1 != i2)
     ))
-    vmat <- utop_var_mat(lobject, params = list(cv = TRUE))@var_mat_obs
+    params_cv <- update_utop_params(params_obj, list(cv = TRUE))
+    vmat <- utop_var_mat(lobject, params = params_cv)@var_mat_obs
     #  vmat = varMat(poly1,variogramModel = variogramModel, params = params)
     #  vmat = vmat-diag(vmat)
     #    vmats[iplot,] = vmat[1,2:ld]

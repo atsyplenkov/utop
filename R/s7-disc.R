@@ -1,8 +1,5 @@
 #' @noRd
 compute_disc_sf <- function(object, params, bb = sf::st_bbox(object), ...) {
-  if (!S7::S7_inherits(params, UtopParams)) {
-    params <- coerce_utop_params(params, ...)
-  }
   stype <- params@rs_type
   resol <- params@r_resol
   debug.level <- params@debug_level
@@ -118,9 +115,6 @@ compute_disc_stars <- function(object, params, bb = NULL, ...) {
 
 #' @noRd
 compute_disc_variogram <- function(variogram, params, ...) {
-  if (!S7::S7_inherits(params, UtopParams)) {
-    params <- coerce_utop_params(params, ...)
-  }
   data <- utop_variogram_data(variogram)
   resol <- params@h_resol^2
   hstype <- params@hs_type
@@ -150,8 +144,13 @@ utop_disc <- S7::new_generic(
   }
 )
 
-S7::method(utop_disc, Utop) <- function(object, params = list(), ...) {
-  object@params <- utop_params(object@params, new_params = params, ...)
+S7::method(utop_disc, Utop) <- function(object, params = NULL, ...) {
+  object@params <- utop_replace_params(
+    current = object@params,
+    params = params,
+    observations = object@observations,
+    formula = object@formula
+  )
   bb <- utop_support_bbox(object@observations, object@prediction_locations)
 
   object@d_obs <- utop_disc(
@@ -188,33 +187,27 @@ S7::method(utop_disc, Utop) <- function(object, params = list(), ...) {
   object
 }
 
-S7::method(utop_disc, UtopVariogram) <- function(object, params = list(), ...) {
-  if (!S7::S7_inherits(params, UtopParams)) {
-    params <- utop_params(params, ...)
-  }
+S7::method(utop_disc, UtopVariogram) <- function(object, params = NULL, ...) {
+  params <- utop_require_params(params)
   compute_disc_variogram(object, params = params, ...)
 }
 
 S7::method(utop_disc, utop_sf_class) <- function(
   object,
-  params = UtopParams(),
+  params = NULL,
   bb = sf::st_bbox(object),
   ...
 ) {
-  if (!S7::S7_inherits(params, UtopParams)) {
-    params <- utop_params(params, ...)
-  }
+  params <- utop_require_params(params)
   compute_disc_sf(object, params = params, bb = bb, ...)
 }
 
 S7::method(utop_disc, utop_stars_class) <- function(
   object,
-  params = UtopParams(),
+  params = NULL,
   bb = NULL,
   ...
 ) {
-  if (!S7::S7_inherits(params, UtopParams)) {
-    params <- utop_params(params, ...)
-  }
+  params <- utop_require_params(params)
   compute_disc_stars(object, params = params, bb = bb, ...)
 }

@@ -3,10 +3,15 @@ compute_var_mat_utop <- function(
   object,
   var_mat_update = FALSE,
   full_pred = FALSE,
-  params = list(),
+  params = NULL,
   ...
 ) {
-  object@params <- utop_params(object@params, new_params = params, ...)
+  object@params <- utop_replace_params(
+    current = object@params,
+    params = params,
+    observations = object@observations,
+    formula = object@formula
+  )
   params_obj <- object@params
   lg_dist_pred <- params_obj@g_dist_pred
 
@@ -29,8 +34,8 @@ compute_var_mat_utop <- function(
 
   variogram_model <- coerce_variogram_model(object@variogram_model)
   dots <- list(...)
-  debug_level <- if ("debug.level" %in% names(dots)) {
-    dots$debug.level
+  debug_level <- if ("debug_level" %in% names(dots)) {
+    dots$debug_level
   } else {
     params_obj@debug_level
   }
@@ -60,13 +65,19 @@ compute_var_mat_utop <- function(
     if (
       is.null(object@d_obs) && !(lg_dist_pred && !is.null(object@g_dist_obs))
     ) {
-      object <- utop_disc(object, ...)
+      object <- do.call(
+        utop_disc,
+        c(list(object = object, params = object@params), dots)
+      )
     }
     if (lg_dist_pred) {
       g_dist_obs <- if (!is.null(object@g_dist_obs)) {
         object@g_dist_obs
       } else {
-        object <- utop_g_dist(object, ...)
+        object <- do.call(
+          utop_g_dist,
+          c(list(object = object, params = object@params), dots)
+        )
         object@g_dist_obs
       }
       if (
@@ -140,20 +151,29 @@ compute_var_mat_utop <- function(
     if (
       is.null(object@d_pred) && !(lg_dist_pred && !is.null(object@g_dist_pred))
     ) {
-      object <- utop_disc(object, ...)
+      object <- do.call(
+        utop_disc,
+        c(list(object = object, params = object@params), dots)
+      )
     }
 
     if (lg_dist_pred) {
       g_dist_pred <- if (!is.null(object@g_dist_pred)) {
         object@g_dist_pred
       } else {
-        object <- utop_g_dist(object, ...)
+        object <- do.call(
+          utop_g_dist,
+          c(list(object = object, params = object@params), dots)
+        )
         object@g_dist_pred
       }
       g_dist_pred_obs <- if (!is.null(object@g_dist_pred_obs)) {
         object@g_dist_pred_obs
       } else {
-        object <- utop_g_dist(object, ...)
+        object <- do.call(
+          utop_g_dist,
+          c(list(object = object, params = object@params), dots)
+        )
         object@g_dist_pred_obs
       }
 
@@ -254,7 +274,7 @@ compute_var_mat_utop <- function(
         object@overlap_obs <- find_overlap(
           observations,
           observations,
-          partialOverlap = params_obj@partial_overlap
+          partial_overlap = params_obj@partial_overlap
         )
       }
       f_obs <- matrix(rep(a_obs, n_obs), ncol = n_obs)
@@ -277,7 +297,7 @@ compute_var_mat_utop <- function(
         object@overlap_pred_obs <- find_overlap(
           observations,
           prediction_locations,
-          partialOverlap = params_obj@partial_overlap
+          partial_overlap = params_obj@partial_overlap
         )
       }
       a_pred <- utop_area(prediction_locations)
@@ -330,7 +350,7 @@ S7::method(utop_var_mat, Utop) <- function(
   object,
   var_mat_update = FALSE,
   full_pred = FALSE,
-  params = list(),
+  params = NULL,
   ...
 ) {
   compute_var_mat_utop(
@@ -356,18 +376,27 @@ utop_var_mat_prepare_args <- function(args) {
     args$variogramModel <- args$variogram_model
     args$variogram_model <- NULL
   }
-
-  param_keys <- intersect(
-    names(args),
-    c(names(S7::props(UtopParams())), unname(utop_param_names), "gDist")
-  )
-  if (length(param_keys) > 0L) {
-    normalized <- utop_params(
-      new_params = utop_params_apply_aliases(args[param_keys])
-    )
-    args[param_keys] <- NULL
-    args$params <- normalized
+  if ("overlap_obs" %in% names(args) && is.null(args$overlapObs)) {
+    args$overlapObs <- args$overlap_obs
+    args$overlap_obs <- NULL
   }
+  if ("overlap_pred_obs" %in% names(args) && is.null(args$overlapPredObs)) {
+    args$overlapPredObs <- args$overlap_pred_obs
+    args$overlap_pred_obs <- NULL
+  }
+
+  inline_params <- setdiff(
+    intersect(names(args), utop_param_fields()),
+    "params"
+  )
+  if (length(inline_params) > 0L) {
+    stop(
+      "pass utop parameters via a UtopParams object in `params`, not as individual arguments: ",
+      paste(inline_params, collapse = ", "),
+      call. = FALSE
+    )
+  }
+  args$params <- utop_require_params(args$params, observations = args$object1)
 
   if ("debug_level" %in% names(args) && is.null(args$debug.level)) {
     args$debug.level <- args$debug_level
@@ -403,7 +432,7 @@ S7::method(utop_var_mat, utop_sf_class) <- function(object, ...) {
   utop_utop_from_state(list(
     observations = object,
     prediction_locations = object2,
-    params = UtopParams(),
+    params = args$params,
     var_mat_obs = result$varMatObs,
     var_mat_pred_obs = result$varMatPredObs,
     var_mat_pred = result$varMatPred,
@@ -442,7 +471,7 @@ S7::method(utop_var_mat, utop_stars_class) <- function(object, ...) {
   utop_utop_from_state(list(
     observations = object,
     prediction_locations = object2,
-    params = UtopParams(),
+    params = args$params,
     var_mat_obs = result$varMatObs,
     var_mat_pred_obs = result$varMatPredObs,
     var_mat_pred = result$varMatPred,

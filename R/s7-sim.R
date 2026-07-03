@@ -6,69 +6,60 @@ utop_sim_runtime_params <- function(params, ...) {
     "logdist",
     "beta",
     "dump",
-    "largeFirst",
     "large_first",
     "replace",
-    "debug.level",
     "debug_level"
   )
-  if (is.null(params)) {
-    params <- list()
-  }
-  runtime <- c(params, dots)
-  runtime <- runtime[intersect(names(runtime), runtime_names)]
-  if (
-    "large_first" %in% names(runtime) && !("largeFirst" %in% names(runtime))
-  ) {
-    runtime$largeFirst <- runtime$large_first
-  }
-  if (
-    "debug_level" %in% names(runtime) && !("debug.level" %in% names(runtime))
-  ) {
-    runtime$debug.level <- runtime$debug_level
-  }
-  utop_updates <- params[!names(params) %in% runtime_names]
+  runtime <- dots[intersect(names(dots), runtime_names)]
   dots <- dots[!names(dots) %in% runtime_names]
-  list(params = utop_updates, runtime = runtime, dots = dots)
+
+  inline_params <- intersect(names(dots), utop_param_fields())
+  if (length(inline_params) > 0L) {
+    stop(
+      "pass utop parameters via a UtopParams object in `params`, not as individual arguments: ",
+      paste(inline_params, collapse = ", "),
+      call. = FALSE
+    )
+  }
+
+  list(params = params, runtime = runtime, dots = dots)
 }
 
 #' @noRd
 compute_sim_utop <- function(
   object,
   var_mat_update = FALSE,
-  beta = NA,
-  large_first = TRUE,
-  replace = FALSE,
-  params = list(),
-  dump = NULL,
-  debug_level = NULL,
+  params = NULL,
   ...
 ) {
   split <- utop_sim_runtime_params(params, ...)
-  object@params <- utop_params(object@params, new_params = split$params)
+  object@params <- utop_replace_params(
+    current = object@params,
+    params = split$params,
+    observations = object@observations,
+    formula = object@formula
+  )
   params_obj <- object@params
   runtime <- split$runtime
   nsim <- if ("nsim" %in% names(runtime)) runtime$nsim else 1L
-
-  if (
-    inherits(object@observations, "stars") ||
-      inherits(object@prediction_locations, "stars")
-  ) {
-    stop("utop_sim does not support stars spatiotemporal objects yet")
+  beta <- if ("beta" %in% names(runtime)) runtime$beta else NA
+  large_first <- if ("large_first" %in% names(runtime)) {
+    runtime$large_first
+  } else {
+    TRUE
   }
-
+  replace <- isTRUE(runtime$replace)
+  dump <- runtime$dump
+  debug_level <- if ("debug_level" %in% names(runtime)) {
+    runtime$debug_level
+  } else {
+    params_obj@debug_level
+  }
   nmax <- params_obj@n_max
   cv <- params_obj@cv
   maxdist <- params_obj@max_dist
   wlim <- params_obj@wlim
   wlim_method <- params_obj@wlim_method
-  if (is.null(debug_level)) {
-    if ("debug.level" %in% names(runtime)) {
-      debug_level <- runtime$debug.level
-    } else {
-      debug_level <- params_obj@debug_level
-    }
-  }
   var_clean <- params_obj@var_clean
   variogram_model <- coerce_variogram_model(object@variogram_model)
   if (is.null(variogram_model)) {
@@ -79,11 +70,16 @@ compute_sim_utop <- function(
     length(object@observations) > 0L &&
       (is.null(object@var_mat_obs) || var_mat_update)
   ) {
-    object <- utop_var_mat(
-      object,
-      var_mat_update = var_mat_update,
-      params = split$params,
-      split$dots
+    object <- do.call(
+      utop_var_mat,
+      c(
+        list(
+          object = object,
+          var_mat_update = var_mat_update,
+          params = object@params
+        ),
+        split$dots
+      )
     )
   }
 
@@ -96,10 +92,16 @@ compute_sim_utop <- function(
       is.null(object@d_pred) &&
         !(params_obj@g_dist_pred && !is.null(object@g_dist_pred))
     ) {
-      object <- utop_disc(object, split$dots)
+      object <- do.call(
+        utop_disc,
+        c(list(object = object, params = object@params), split$dots)
+      )
     }
     if (params_obj@g_dist_pred && is.null(object@g_dist_pred)) {
-      object <- utop_g_dist(object, split$dots)
+      object <- do.call(
+        utop_g_dist,
+        c(list(object = object, params = object@params), split$dots)
+      )
       object@var_mat_pred <- compute_var_mat_matrix(
         object@g_dist_pred,
         variogramModel = variogram_model
@@ -339,7 +341,7 @@ utop_sim <- S7::new_generic(
 S7::method(utop_sim, Utop) <- function(
   object,
   var_mat_update = FALSE,
-  params = list(),
+  params = NULL,
   ...
 ) {
   compute_sim_utop(

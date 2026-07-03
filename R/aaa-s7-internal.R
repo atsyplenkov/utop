@@ -1,88 +1,111 @@
 #' @noRd
-utop_param_names <- c(
-  model = "model",
-  nugget = "nugget",
-  unc = "unc",
-  r_resol = "rresol",
-  h_resol = "hresol",
-  rs_type = "rstype",
-  hs_type = "hstype",
-  cloud = "cloud",
-  amul = "amul",
-  dmul = "dmul",
-  fit_method = "fit.method",
-  g_dist_est = "gDistEst",
-  g_dist_pred = "gDistPred",
-  var_clean = "varClean",
-  max_dist = "maxdist",
-  n_max = "nmax",
-  n_clus = "nclus",
-  cn_areas = "cnAreas",
-  clus_type = "clusType",
-  outfile = "outfile",
-  partial_overlap = "partialOverlap",
-  wlim = "wlim",
-  wlim_method = "wlimMethod",
-  singular_solve = "singularSolve",
-  uk_trend_support = "ukTrendSupport",
-  cv = "cv",
-  debug_level = "debug.level",
-  par_init = "parInit"
-)
+utop_param_fields <- function() {
+  names(S7::props(UtopParams()))
+}
 
 #' @noRd
-coerce_utop_params <- function(params = NULL, ...) {
-  dots <- list(...)
-  if ("newPar" %in% names(dots)) {
-    new_params <- dots$newPar
-    dots$newPar <- NULL
-    base <- if (S7::S7_inherits(params, UtopParams)) {
-      params
-    } else {
-      utop_params(params = params, ...)
-    }
-    return(utop_params(params = base, new_params = new_params, ...))
+utop_require_named_values <- function(values, caller = "utop_params()") {
+  if (length(values) == 0L) {
+    return(values)
+  }
+  if (
+    is.null(names(values)) || anyNA(names(values)) || any(names(values) == "")
+  ) {
+    stop(caller, " only accepts named arguments", call. = FALSE)
+  }
+  values
+}
+
+#' @noRd
+utop_is_default_par_init <- function(par_init, model) {
+  if (is.null(par_init)) {
+    return(TRUE)
+  }
+  default <- find_par_init_default(model)
+  isTRUE(all.equal(par_init, default, check.attributes = FALSE))
+}
+
+#' @noRd
+utop_complete_params <- function(params, observations = NULL, formula = NULL) {
+  if (!S7::S7_inherits(params, UtopParams)) {
+    stop("internal error: expected a UtopParams object", call. = FALSE)
   }
 
-  if (S7::S7_inherits(params, UtopParams)) {
-    if (length(dots) > 0L) {
-      param_names <- c(
-        names(S7::props(params)),
-        unname(utop_param_names),
-        "gDist"
-      )
-      param_dots <- dots[intersect(names(dots), param_names)]
-      if (length(param_dots) > 0L) {
-        return(utop_params(
-          params = params,
-          new_params = utop_params_apply_aliases(param_dots)
-        ))
-      }
+  if (
+    !is.null(observations) &&
+      utop_is_default_par_init(params@par_init, params@model)
+  ) {
+    if (is.null(formula)) {
+      formula <- as.formula(utop_default_formula(observations))
     }
-    return(params)
-  }
-
-  if (is.list(params) && length(params) > 0L) {
-    param_names <- c(
-      names(S7::props(UtopParams())),
-      unname(utop_param_names),
-      "gDist"
+    params@par_init <- find_par_init(
+      formula = formula,
+      observations = observations,
+      model = params@model
     )
-    param_dots <- dots[intersect(names(dots), param_names)]
-    if (length(param_dots) > 0L) {
-      return(utop_params(
-        params = params,
-        new_params = utop_params_apply_aliases(param_dots)
+  } else if (is.null(params@par_init)) {
+    params@par_init <- find_par_init_default(params@model)
+  }
+
+  params
+}
+
+#' @noRd
+utop_require_params <- function(
+  params = NULL,
+  observations = NULL,
+  formula = NULL,
+  arg = "params"
+) {
+  if (is.null(params)) {
+    return(utop_complete_params(
+      UtopParams(),
+      observations = observations,
+      formula = formula
+    ))
+  }
+  if (!S7::S7_inherits(params, UtopParams)) {
+    stop(
+      "`",
+      arg,
+      "` must be a UtopParams object. Create it with utop_params().",
+      call. = FALSE
+    )
+  }
+
+  utop_complete_params(params, observations = observations, formula = formula)
+}
+
+#' @noRd
+utop_replace_params <- function(
+  current = NULL,
+  params = NULL,
+  observations = NULL,
+  formula = NULL,
+  arg = "params"
+) {
+  if (is.null(params)) {
+    if (is.null(current)) {
+      return(utop_require_params(
+        NULL,
+        observations = observations,
+        formula = formula,
+        arg = arg
       ))
     }
-    return(utop_params(params = params))
+    return(utop_complete_params(
+      current,
+      observations = observations,
+      formula = formula
+    ))
   }
 
-  if (is.null(params)) {
-    return(utop_params(...))
-  }
-
-  utop_params(params = params, ...)
+  utop_require_params(
+    params,
+    observations = observations,
+    formula = formula,
+    arg = arg
+  )
 }
 
 #' @noRd
@@ -125,7 +148,7 @@ utop_tag_variogram_class <- function(data, cloud = FALSE) {
 }
 
 #' @noRd
-utop_variogram_model_from_rtop <- function(model) {
+utop_variogram_model_from_list <- function(model) {
   if (is.null(model)) {
     return(NULL)
   }
@@ -146,7 +169,8 @@ update_utop_params <- function(params, values) {
     return(params)
   }
 
-  unknown <- setdiff(names(values), names(S7::props(params)))
+  values <- utop_require_named_values(values)
+  unknown <- setdiff(names(values), utop_param_fields())
   if (length(unknown) > 0L) {
     stop(
       "unknown utop parameter(s): ",
@@ -163,40 +187,6 @@ update_utop_params <- function(params, values) {
   }
 
   params
-}
-
-#' @noRd
-utop_params_apply_aliases <- function(values) {
-  if (is.null(values) || length(values) == 0L) {
-    return(values)
-  }
-  if ("geoDist" %in% names(values)) {
-    stop("geoDist is not used anymore, please use g_dist", call. = FALSE)
-  }
-  if ("gDist" %in% names(values)) {
-    g_dist <- isTRUE(values$gDist)
-    values$g_dist_est <- g_dist
-    values$g_dist_pred <- g_dist
-    values$gDist <- NULL
-  }
-
-  legacy_map <- stats::setNames(
-    names(utop_param_names),
-    unname(utop_param_names)
-  )
-  legacy_names <- intersect(names(values), names(legacy_map))
-  for (old_name in legacy_names) {
-    new_name <- legacy_map[[old_name]]
-    if (old_name == new_name) {
-      next
-    }
-    if (is.null(values[[new_name]])) {
-      values[[new_name]] <- values[[old_name]]
-    }
-    values[[old_name]] <- NULL
-  }
-
-  values
 }
 
 #' @noRd

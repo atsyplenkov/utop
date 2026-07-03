@@ -26,7 +26,11 @@ compute_krige <- function(
   } else {
     lambda <- NULL
   }
-  params <- do.call(coerce_utop_params, c(list(params = params), dots))
+  params <- utop_require_params(
+    params,
+    observations = object,
+    formula = formulaString
+  )
   cv <- params@cv
   nmax <- params@n_max
   wlim <- params@wlim
@@ -216,7 +220,11 @@ compute_krige <- function(
       wlimMethod,
       BLUE = BLUE,
       trendObs = trendObs,
-      trendPred = trendPred[inew, ]
+      trendPred = if (nrow(trendPred) == 1L) {
+        trendPred[1, ]
+      } else {
+        trendPred[inew, ]
+      }
     )
 
     predictions$var1.pred[inew] <- ret$pred[1]

@@ -39,7 +39,7 @@ compute_var_mat_default <- function(
   params = NULL,
   ...
 ) {
-  params <- coerce_utop_params(params, ...)
+  params <- utop_require_params(params, observations = object1)
   variogramModel <- coerce_variogram_model(variogramModel)
   d1 <- utop_disc(object1, params = params, ...)
   if (!is.null(object2)) {
@@ -185,7 +185,7 @@ compute_var_mat_list <- function(
   debug_level = NULL,
   ...
 ) {
-  params <- coerce_utop_params(params, ...)
+  params <- utop_require_params(params)
   if (is.null(debug.level)) {
     debug.level <- if (!is.null(debug_level)) {
       debug_level

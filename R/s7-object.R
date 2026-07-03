@@ -8,9 +8,8 @@
 #' @param prediction_locations `sf` polygons or a vector `stars` data cube with
 #'   prediction locations.
 #' @param formula Formula describing the dependent variable and trend.
-#' @param params A list or [UtopParams] object with model parameters.
+#' @param params A [UtopParams] object with model parameters.
 #' @param overlap_obs,overlap_pred_obs Optional overlap matrices.
-#' @param ... Additional parameter values passed to [utop_params()].
 #'
 #' @return A [Utop] object.
 #' @export
@@ -18,16 +17,15 @@ utop_object <- function(
   observations,
   prediction_locations = NULL,
   formula = NULL,
-  params = list(),
+  params = NULL,
   overlap_obs = NULL,
-  overlap_pred_obs = NULL,
-  ...
+  overlap_pred_obs = NULL
 ) {
   if (S7::S7_inherits(observations, Utop)) {
     object <- observations
-    object@params <- utop_params(
-      params = object@params,
-      new_params = c(params, list(...)),
+    object@params <- utop_replace_params(
+      current = object@params,
+      params = params,
       observations = object@observations,
       formula = if (is.null(formula)) object@formula else formula
     )
@@ -57,11 +55,10 @@ utop_object <- function(
     formula <- as.formula(formula)
   }
 
-  params <- utop_params(
-    params = params,
+  params <- utop_require_params(
+    params,
     observations = observations,
-    formula = formula,
-    ...
+    formula = formula
   )
 
   if (params@nugget && is.null(overlap_obs)) {

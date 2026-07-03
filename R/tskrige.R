@@ -14,7 +14,11 @@ compute_krige_stars <- function(
   ...
 ) {
   dots <- list(...)
-  params <- do.call(coerce_utop_params, c(list(params = params), dots))
+  params <- utop_require_params(
+    params,
+    observations = object,
+    formula = formulaString
+  )
   cv <- params@cv
   debug.level <- params@debug_level
   if (!cv && !isTRUE(all.equal(is.null(olags), is.null(plags)))) {

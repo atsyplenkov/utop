@@ -95,18 +95,116 @@ UtopParams <- S7::new_class(
     par_init = utop_optional()
   ),
   validator = function(self) {
+    is_scalar <- function(x) length(x) == 1L && !is.na(x)
+    check_flag <- function(name) {
+      value <- S7::prop(self, name)
+      if (!is_scalar(value)) {
+        paste0(name, " must be a logical scalar")
+      } else {
+        NULL
+      }
+    }
+    check_number <- function(name, lower = -Inf, allow_inf = FALSE) {
+      value <- S7::prop(self, name)
+      if (
+        !is_scalar(value) ||
+          (!allow_inf && is.infinite(value)) ||
+          value <= lower
+      ) {
+        paste0(name, " must be a numeric scalar greater than ", lower)
+      } else {
+        NULL
+      }
+    }
+
     if (length(self@model) != 1L) {
       return("model must be a character scalar")
     }
     if (!self@model %in% c("Exp", "Sph", "Gau", "Sp1", "Ex1", "Fra")) {
       return(paste("model", self@model, "not implemented"))
     }
-    if (length(self@cloud) != 1L) {
-      return("cloud must be a logical scalar")
+
+    for (name in c(
+      "nugget",
+      "unc",
+      "cloud",
+      "g_dist_est",
+      "g_dist_pred",
+      "var_clean",
+      "partial_overlap",
+      "singular_solve",
+      "cv"
+    )) {
+      problem <- check_flag(name)
+      if (!is.null(problem)) {
+        return(problem)
+      }
     }
-    if (length(self@r_resol) != 1L || self@r_resol <= 0) {
-      return("r_resol must be a positive number")
+
+    for (name in c("r_resol", "h_resol", "amul", "dmul")) {
+      problem <- check_number(name, lower = 0)
+      if (!is.null(problem)) {
+        return(problem)
+      }
     }
+    problem <- check_number("wlim", lower = 0, allow_inf = TRUE)
+    if (!is.null(problem)) {
+      return(problem)
+    }
+
+    for (name in c("n_max", "n_clus", "cn_areas")) {
+      problem <- check_number(name, lower = 0, allow_inf = TRUE)
+      if (!is.null(problem)) {
+        return(problem)
+      }
+    }
+
+    if (!is_scalar(self@fit_method)) {
+      return("fit_method must be a numeric scalar")
+    }
+    if (!is_scalar(self@debug_level)) {
+      return("debug_level must be a numeric scalar")
+    }
+    if (
+      !is_scalar(self@max_dist) ||
+        (!is.infinite(self@max_dist) && self@max_dist < 0)
+    ) {
+      return("max_dist must be a non-negative numeric scalar")
+    }
+    if (
+      length(self@rs_type) != 1L ||
+        !self@rs_type %in% c("rtop", "regular", "random")
+    ) {
+      return("rs_type must be one of: rtop, regular, random")
+    }
+    if (length(self@hs_type) != 1L) {
+      return("hs_type must be a character scalar")
+    }
+    if (length(self@wlim_method) != 1L) {
+      return("wlim_method must be a character scalar")
+    }
+    if (
+      length(self@uk_trend_support) != 1L ||
+        !self@uk_trend_support %in% c("centroid", "block")
+    ) {
+      return("uk_trend_support must be one of: centroid, block")
+    }
+    if (!is.null(self@clus_type) && length(self@clus_type) != 1L) {
+      return("clus_type must be a character scalar")
+    }
+    if (!is.null(self@outfile) && length(self@outfile) != 1L) {
+      return("outfile must be a character scalar")
+    }
+    if (!is.null(self@par_init)) {
+      if (!is.data.frame(self@par_init)) {
+        return("par_init must be a data frame")
+      }
+      needed <- c("parl", "paru", "par0")
+      if (!all(needed %in% names(self@par_init))) {
+        return("par_init must contain columns parl, paru, and par0")
+      }
+    }
+
     NULL
   }
 )

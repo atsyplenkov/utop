@@ -217,9 +217,8 @@ compute_variogram_stars <- function(
 #' Create a sample variogram
 #'
 #' @param object A [Utop] object, `sf`, or `stars` data.
-#' @param ... Method-specific arguments. For [Utop] objects, `params` updates
-#'   parameters. For `sf` and `stars`, supply `formula`, `params`, and
-#'   optional `disc_points`.
+#' @param ... Method-specific arguments. For `sf` and `stars`, supply
+#'   `formula`, `params`, and optional `disc_points`.
 #'
 #' @return A [Utop] object with a variogram attached, or a standalone
 #'   [UtopVariogram] / [UtopVariogramCloud] object.
@@ -232,10 +231,10 @@ utop_variogram <- S7::new_generic(
   }
 )
 
-S7::method(utop_variogram, Utop) <- function(object, params = list(), ...) {
-  object@params <- utop_params(
-    params = object@params,
-    new_params = params,
+S7::method(utop_variogram, Utop) <- function(object, params = NULL, ...) {
+  object@params <- utop_replace_params(
+    current = object@params,
+    params = params,
     observations = object@observations,
     formula = object@formula
   )
@@ -265,12 +264,7 @@ S7::method(utop_variogram, utop_sf_class) <- function(
   disc_points = NULL,
   ...
 ) {
-  if (is.null(params)) {
-    params <- UtopParams()
-  }
-  if (!S7::S7_inherits(params, UtopParams)) {
-    params <- utop_params(params, ...)
-  }
+  params <- utop_require_params(params)
   if (is.null(cloud)) {
     cloud <- params@cloud
   }
@@ -294,12 +288,7 @@ S7::method(utop_variogram, utop_stars_class) <- function(
   disc_points = NULL,
   ...
 ) {
-  if (is.null(params)) {
-    params <- UtopParams()
-  }
-  if (!S7::S7_inherits(params, UtopParams)) {
-    params <- utop_params(params, ...)
-  }
+  params <- utop_require_params(params)
   if (is.null(cloud)) {
     cloud <- params@cloud
   }
