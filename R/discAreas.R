@@ -1,5 +1,5 @@
 #' @noRd
-discBinAreas <- function(object, object2, dist, resol, stype) {
+disc_bin_areas <- function(object, object2, dist, resol, stype) {
   ad <- sqrt(object) / 2
   ad[2] <- sqrt(object2) / 2
   dAreas <- list()
@@ -20,6 +20,3 @@ discBinAreas <- function(object, object2, dist, resol, stype) {
   }
   dAreas
 }
-
-#' @noRd
-disc_bin_areas <- discBinAreas

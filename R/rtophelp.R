@@ -8,23 +8,13 @@ adfunc <- function(sampleVariogram, observations, amul) {
   }
   amax <- max(area)
   amin <- min(area)
-  Rver <- R.Version()
-  if (as.numeric(Rver$major) * 100 + as.numeric(Rver$minor) >= 214) {
-    areas <- axTicks(
-      1,
-      c(amin / 5, amax * 10, amul),
-      usr = c(log10(amin / 5) - 1, log10(amax) + 1),
-      log = TRUE,
-      nintLog = Inf
-    )
-  } else {
-    areas <- axTicks(
-      1,
-      c(amin / 5, amax * 10, amul),
-      usr = c(log10(amin / 5) - 1, log10(amax) + 2),
-      log = TRUE
-    )
-  }
+  areas <- axTicks(
+    1,
+    c(amin / 5, amax * 10, amul),
+    usr = c(log10(amin / 5) - 1, log10(amax) + 1),
+    log = TRUE,
+    nintLog = Inf
+  )
   areas <- areas[(min(which(areas > amin)) - 1):(max(which(areas < amax)) + 1)]
   areas
 }
@@ -45,22 +35,12 @@ dfunc <- function(sampleVariogram, observations, dmul) {
   if (dmin < dmax / 1e8) {
     dmin <- dmax / 1e8
   }
-  Rver <- R.Version()
-  if (as.numeric(Rver$major) * 100 + as.numeric(Rver$minor) >= 214) {
-    dists <- axTicks(
-      1,
-      c(dmin / 5, dmax * 10, dmul),
-      usr = c(log10(dmin / 5) - 1, log10(dmax) + 1),
-      log = TRUE,
-      nintLog = Inf
-    )
-  } else {
-    dists <- axTicks(
-      1,
-      c(dmin / 5, dmax * 10, dmul),
-      usr = c(log10(dmin / 5) - 1, log10(dmax) + 2),
-      log = TRUE
-    )
-  }
+  dists <- axTicks(
+    1,
+    c(dmin / 5, dmax * 10, dmul),
+    usr = c(log10(dmin / 5) - 1, log10(dmax) + 1),
+    log = TRUE,
+    nintLog = Inf
+  )
   dists[(min(which(dists > dmin)) - 1):(max(which(dists < dmax)) + 1)]
 }

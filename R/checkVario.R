@@ -382,23 +382,13 @@ compute_check_variogram_model <- function(
   ymax <- max(pvar)
 
   if (acor != 1) {
-    Rver <- R.Version()
-    if (as.numeric(Rver$major) * 100 + as.numeric(Rver$minor) >= 214) {
-      xTicks <- axTicks(
-        1,
-        c(xmin, xmax, 3),
-        usr = c(log10(xmin), log10(xmax)),
-        log = TRUE,
-        nintLog = Inf
-      )
-    } else {
-      xTicks <- axTicks(
-        1,
-        c(xmin, xmax, 3),
-        usr = c(log10(xmin), log10(xmax)),
-        log = TRUE
-      )
-    }
+    xTicks <- axTicks(
+      1,
+      c(xmin, xmax, 3),
+      usr = c(log10(xmin), log10(xmax)),
+      log = TRUE,
+      nintLog = Inf
+    )
     xlabs <- xTicks * sqrt(acor)
   } else {
     xTicks <- NULL

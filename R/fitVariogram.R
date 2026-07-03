@@ -226,15 +226,6 @@ goFit <- function(gobs, gest, dist, np, fit.method = 8) {
 }
 
 
-#cfunc = function(xd,param){
-#  a = params[1]
-#  b = params[2]
-#  c = params[3]
-#  d = params[4]
-
-#  cfunc = a*(xd^b)*(1-exp(- ((xd/c)^d)))
-#}
-
 #' @noRd
 varioEx <- function(skor, variogramModel) {
   if (S7::S7_inherits(variogramModel, UtopVariogramModel)) {
@@ -258,7 +249,6 @@ imodel <- function(model) {
     Exp = 1,
     Ex1 = 2,
     Gau = 3,
-    Ga1 = 4,
     Gho = 5,
     Sph = 6,
     Sp1 = 7,
