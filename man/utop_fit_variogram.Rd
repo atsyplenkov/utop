@@ -9,8 +9,8 @@ utop_fit_variogram(object, ...)
 \arguments{
 \item{object}{A \link{Utop}, \link{UtopVariogram}, or \link{UtopVariogramCloud} object.}
 
-\item{...}{Method-specific arguments. For \link{Utop} objects, \code{params} and
-\code{iprint} control parameter updates and optimiser verbosity.}
+\item{...}{Method-specific arguments. For \link{Utop} objects, \code{iprint}
+controls optimiser verbosity.}
 }
 \value{
 A fitted object.

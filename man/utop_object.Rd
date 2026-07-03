@@ -8,10 +8,9 @@ utop_object(
   observations,
   prediction_locations = NULL,
   formula = NULL,
-  params = list(),
+  params = NULL,
   overlap_obs = NULL,
-  overlap_pred_obs = NULL,
-  ...
+  overlap_pred_obs = NULL
 )
 }
 \arguments{
@@ -23,11 +22,9 @@ prediction locations.}
 
 \item{formula}{Formula describing the dependent variable and trend.}
 
-\item{params}{A list or \link{UtopParams} object with model parameters.}
+\item{params}{A \link{UtopParams} object with model parameters.}
 
 \item{overlap_obs, overlap_pred_obs}{Optional overlap matrices.}
-
-\item{...}{Additional parameter values passed to \code{\link[=utop_params]{utop_params()}}.}
 }
 \value{
 A \link{Utop} object.

@@ -4,24 +4,14 @@
 \alias{utop_params}
 \title{Create utop parameters}
 \usage{
-utop_params(
-  params = NULL,
-  new_params = list(),
-  observations = NULL,
-  formula = NULL,
-  ...
-)
+utop_params(..., observations = NULL, formula = NULL)
 }
 \arguments{
-\item{params}{Existing parameters as a list or \link{UtopParams} object.}
-
-\item{new_params}{Parameter values to update.}
+\item{...}{Canonical utop parameter values supplied as named arguments.}
 
 \item{observations}{Optional observations used to infer starting values.}
 
 \item{formula}{Optional model formula.}
-
-\item{...}{Individual parameter values.}
 }
 \value{
 A \link{UtopParams} object.

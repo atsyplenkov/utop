@@ -9,8 +9,8 @@ utop_check_variogram(object, ...)
 \arguments{
 \item{object}{A \link{Utop} object or \link{UtopVariogramModel}.}
 
-\item{...}{Method-specific arguments. For \link{Utop} objects, \code{params} updates
-parameters.}
+\item{...}{Method-specific arguments. For \link{Utop} objects, supply \code{params}
+as a \link{UtopParams} object.}
 }
 \value{
 An updated diagnostic object.

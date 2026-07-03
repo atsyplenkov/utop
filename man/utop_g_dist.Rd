@@ -9,8 +9,8 @@ utop_g_dist(object, ...)
 \arguments{
 \item{object}{A \link{Utop} object, spatial object, or discretisation list.}
 
-\item{...}{Method-specific arguments. For \link{Utop} objects, \code{params} updates
-parameters.}
+\item{...}{Method-specific arguments. For \link{Utop} objects and spatial
+inputs, supply \code{params} as a \link{UtopParams} object.}
 }
 \value{
 Geostatistical distances.

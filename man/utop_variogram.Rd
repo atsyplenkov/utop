@@ -9,9 +9,8 @@ utop_variogram(object, ...)
 \arguments{
 \item{object}{A \link{Utop} object, \code{sf}, or \code{stars} data.}
 
-\item{...}{Method-specific arguments. For \link{Utop} objects, \code{params} updates
-parameters. For \code{sf} and \code{stars}, supply \code{formula}, \code{params}, and
-optional \code{disc_points}.}
+\item{...}{Method-specific arguments. For \code{sf} and \code{stars}, supply
+\code{formula}, \code{params}, and optional \code{disc_points}.}
 }
 \value{
 A \link{Utop} object with a variogram attached, or a standalone
