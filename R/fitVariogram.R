@@ -242,21 +242,6 @@ varioEx <- function(skor, variogramModel) {
 }
 
 #' @noRd
-imodel <- function(model) {
-  #     The numbers should match the numbers of the Fortran-function vario
-  as.integer(switch(
-    model,
-    Exp = 1,
-    Ex1 = 2,
-    Gau = 3,
-    Gho = 5,
-    Sph = 6,
-    Sp1 = 7,
-    Fra = 8
-  ))
-}
-
-#' @noRd
 nuggEx <- function(ared, variogramModel) {
   if (S7::S7_inherits(variogramModel, UtopVariogramModel)) {
     params <- variogramModel@params
