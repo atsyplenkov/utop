@@ -1,4 +1,4 @@
 # stars workflow numerical outputs are stable
 
-    "8.339751\n7.448700\n8.660183\n1.735466"
+    "7.646960\n7.050528\n8.102668\n2.829376"
 
