@@ -32,10 +32,12 @@ test_that("kriging reuses the legacy semivariance path consistently", {
     fixtures$observations,
     fixtures$prediction_locations,
     variogram_model = rtop_fitted@variogram_model,
-    g_dist_est = TRUE,
-    g_dist_pred = TRUE,
-    r_resol = 25,
-    h_resol = 3
+    params = utop_params(
+      g_dist_est = TRUE,
+      g_dist_pred = TRUE,
+      r_resol = 25,
+      h_resol = 3
+    )
   )
   rtop_reuse <- utop_krige(rtop_cv)
 

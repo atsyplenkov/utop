@@ -1,4 +1,4 @@
-test_that("constructor and parameter flow cover inference, coercion, and projection checks", {
+test_that("constructor and strict params flow cover inference and CRS checks", {
   spatial <- utop_spatial_subset_fixtures(n_obs = 6, n_pred = 2)
   sf_fixtures <- utop_sf_subset_fixtures(n_obs = 6, n_pred = 2)
 
@@ -24,48 +24,49 @@ test_that("constructor and parameter flow cover inference, coercion, and project
   expect_s3_class(coerced@formula, "formula")
   expect_identical(deparse(coerced@formula), "obs ~ 1")
 
-  updated <- utop_object(coerced, params = list(gDist = FALSE, model = "Ex1"))
+  updated <- utop_object(
+    coerced,
+    params = utop_test_params(
+      g_dist_est = FALSE,
+      g_dist_pred = FALSE,
+      model = "Ex1"
+    )
+  )
   expect_true(S7::S7_inherits(updated, Utop))
   expect_false(isTRUE(updated@params@g_dist_est))
   expect_false(isTRUE(updated@params@g_dist_pred))
-
-  gdist_true <- utop_object(
-    spatial$observations,
-    spatial$prediction_locations,
-    formula = "obs ~ 1",
-    params = list(gDist = TRUE)
-  )
-  expect_true(gdist_true@params@g_dist_est)
-  expect_true(gdist_true@params@g_dist_pred)
-
-  gdist_false <- utop_object(
-    spatial$observations,
-    spatial$prediction_locations,
-    formula = "obs ~ 1",
-    params = list(gDist = FALSE)
-  )
-  expect_false(isTRUE(gdist_false@params@g_dist_est))
-  expect_false(isTRUE(gdist_false@params@g_dist_pred))
-
-  expect_error(utop:::utop_params(list(), geoDist = TRUE))
-
-  supported_model <- utop_object(
-    spatial$observations,
-    spatial$prediction_locations,
-    formula = "obs ~ 1",
-    params = list(model = "Ex1")
-  )
-  expect_identical(supported_model@params@model, "Ex1")
 
   expect_error(
     utop_object(
       spatial$observations,
       spatial$prediction_locations,
       formula = "obs ~ 1",
-      params = list(model = "Bogus")
+      params = list(g_dist_est = TRUE)
     ),
-    "not implemented"
+    "UtopParams"
   )
+  expect_error(utop_params(gDist = TRUE), "unknown utop parameter")
+  expect_error(utop_params(list()), "only accepts named arguments")
+
+  supported_model <- utop_object(
+    spatial$observations,
+    spatial$prediction_locations,
+    formula = "obs ~ 1",
+    params = utop_params(model = "Ex1")
+  )
+  expect_identical(supported_model@params@model, "Ex1")
+  expect_error(utop_params(model = "Bogus"), "not implemented")
+
+  params_no_obs <- utop_test_params()
+  expect_true(utop_is_default_par_init(params_no_obs@par_init, "Ex1"))
+  obj <- utop_object(
+    spatial$observations,
+    spatial$prediction_locations,
+    formula = "obs ~ 1",
+    params = params_no_obs
+  )
+  expect_false(utop_is_default_par_init(obj@params@par_init, "Ex1"))
+  expect_false(identical(obj@params@par_init, params_no_obs@par_init))
 
   sf_obj <- utop_object(
     sf_fixtures$observations,

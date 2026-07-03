@@ -7,7 +7,7 @@ test_that("sf variogram uses explicit support area", {
   vario <- utop_variogram(
     observations,
     formula = obs ~ 1,
-    params = list(cloud = TRUE)
+    params = utop_params(cloud = TRUE)
   )
 
   expect_true(S7::S7_inherits(vario, UtopVariogramCloud))
@@ -23,7 +23,7 @@ test_that("stars pooled variogram averages TNDTK time steps", {
   vario <- utop_variogram(
     observations,
     formula = obs ~ 1,
-    params = list(cloud = TRUE)
+    params = utop_params(cloud = TRUE)
   )
   manual_gamma <- mean((obs_mat[1, ] - obs_mat[2, ])^2 / 2)
   pair_vario <- vario@data[vario@data$acl1 == 1 & vario@data$acl2 == 2, ]
@@ -40,9 +40,9 @@ test_that("stars pooled variogram averages TNDTK time steps", {
 
 test_that("TNDTK stars time series interpolate with pooled variogram", {
   fixture <- utop_tndtk_stars_fixture(n_obs = 8, n_pred = 3)
-  params <- list(
-    rresol = 4,
-    rstype = "regular",
+  params <- utop_params(
+    r_resol = 4,
+    rs_type = "regular",
     debug_level = -1,
     nugget = FALSE,
     cloud = FALSE

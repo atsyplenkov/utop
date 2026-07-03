@@ -22,6 +22,23 @@ utop_demo_data <- function() {
   readRDS(file.path(utop_extdata_path(), "demo.rds"))
 }
 
+utop_test_params <- function(...) {
+  defaults <- list(
+    g_dist_est = TRUE,
+    g_dist_pred = TRUE,
+    cloud = FALSE,
+    r_resol = 25,
+    h_resol = 3,
+    debug_level = -1
+  )
+  do.call(utop_params, utils::modifyList(defaults, list(...)))
+}
+
+utop_update_params <- function(params, ...) {
+  update_utop_params(params, list(...))
+}
+
+
 utop_spatial_fixtures <- function() {
   observations <- utop_read_sf("observations")
   prediction_locations <- utop_read_sf("predictionLocations")
@@ -33,14 +50,7 @@ utop_spatial_fixtures <- function() {
   list(
     observations = observations,
     prediction_locations = prediction_locations,
-    params = list(
-      g_dist_est = TRUE,
-      g_dist_pred = TRUE,
-      cloud = FALSE,
-      r_resol = 25,
-      h_resol = 3,
-      debug_level = -1
-    )
+    params = utop_test_params()
   )
 }
 
@@ -48,7 +58,7 @@ utop_spatial_fixtures <- function() {
 utop_sf_subset_fixtures <- function(
   n_obs = 10,
   n_pred = 5,
-  params = list(g_dist_est = TRUE, g_dist_pred = TRUE, cloud = FALSE)
+  params = utop_test_params()
 ) {
   observations <- utop_read_sf("observations")
   prediction_locations <- utop_read_sf("predictionLocations")
@@ -64,14 +74,7 @@ utop_sf_subset_fixtures <- function(
 utop_spatial_subset_fixtures <- function(
   n_obs = 10,
   n_pred = 2,
-  params = list(
-    g_dist_est = TRUE,
-    g_dist_pred = TRUE,
-    cloud = FALSE,
-    r_resol = 25,
-    h_resol = 3,
-    debug_level = -1
-  )
+  params = utop_test_params()
 ) {
   fixtures <- utop_spatial_fixtures()
 

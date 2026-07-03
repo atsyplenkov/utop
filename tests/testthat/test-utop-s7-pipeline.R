@@ -12,7 +12,7 @@ test_that("S7 utop pipeline works for sf data", {
     observations,
     prediction_locations[1:5, ],
     formula = obs ~ 1,
-    params = list(g_dist_est = TRUE, g_dist_pred = TRUE, cloud = FALSE)
+    params = utop_test_params()
   )
 
   expect_true(S7::S7_inherits(obj, Utop))

@@ -8,9 +8,12 @@ if (!identical(Sys.getenv("UTOP_DIAGNOSTICS"), "true")) {
     spatial$observations,
     spatial$prediction_locations,
     formula = "obs ~ 1",
-    params = modifyList(
+    params = utop_update_params(
       spatial$params,
-      list(nugget = FALSE, model = "Ex1", gDist = FALSE)
+      nugget = FALSE,
+      model = "Ex1",
+      g_dist_est = FALSE,
+      g_dist_pred = FALSE
     )
   )
   fit_base <- utop_fit_variogram(unfit_base, iprint = -1)
@@ -18,12 +21,15 @@ if (!identical(Sys.getenv("UTOP_DIAGNOSTICS"), "true")) {
   spatial_small <- utop_spatial_subset_fixtures(n_obs = 8, n_pred = 2)
   fit_cloud <- utop_fit_variogram(
     utop_object(
-      spatial_small@observations,
+      spatial_small$observations,
       spatial_small$prediction_locations,
       formula = "obs ~ 1",
-      params = modifyList(
-        spatial_small@params,
-        list(nugget = FALSE, model = "Ex1", gDist = FALSE)
+      params = utop_update_params(
+        spatial_small$params,
+        nugget = FALSE,
+        model = "Ex1",
+        g_dist_est = FALSE,
+        g_dist_pred = FALSE
       )
     ),
     iprint = -1
@@ -51,7 +57,7 @@ if (!identical(Sys.getenv("UTOP_DIAGNOSTICS"), "true")) {
       spatial$observations,
       spatial$prediction_locations,
       formula = "obs ~ 1",
-      params = modifyList(spatial$params, list(nugget = FALSE, model = "Ex1"))
+      params = utop_update_params(spatial$params, nugget = FALSE, model = "Ex1")
     )
 
     expect_error(
@@ -106,29 +112,33 @@ if (!identical(Sys.getenv("UTOP_DIAGNOSTICS"), "true")) {
       fit_cloud,
       cloud = FALSE,
       gDist = FALSE,
-      params = list(amul = 3, dmul = 3)
+      params = utop_params(amul = 3, dmul = 3)
     )
     checked_rtop_cloud <- utop_check_variogram(
       fit_cloud,
       cloud = TRUE,
       gDist = FALSE,
-      params = list(amul = 3, dmul = 3)
+      params = utop_params(amul = 3, dmul = 3)
     )
     checked_model <- utop_check_variogram(
       fit_cloud@variogram_model,
       observations = fit_cloud@observations,
-      sampleVariogram = fit_cloud@variogram,
-      params = list(amul = 3, dmul = 3)
+      sample_variogram = fit_cloud@variogram,
+      params = utop_params(amul = 3, dmul = 3)
     )
     cloud_sample <- utop_variogram(
       fit_cloud,
-      params = modifyList(fit_cloud@params, list(cloud = TRUE, nugget = FALSE))
+      params = utop_update_params(
+        fit_cloud@params,
+        cloud = TRUE,
+        nugget = FALSE
+      )
     )@variogram_cloud
     checked_model_cloud <- utop_check_variogram(
       fit_cloud@variogram_model,
       observations = fit_cloud@observations,
-      sampleVariogram = cloud_sample,
-      params = list(amul = 3, dmul = 3)
+      sample_variogram = cloud_sample,
+      params = utop_params(amul = 3, dmul = 3)
     )
 
     cl <- utop_cluster(1, type = "PSOCK")

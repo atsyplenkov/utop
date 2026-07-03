@@ -90,9 +90,11 @@ test_that("spatial simulation outputs are stable with fixed seed", {
 
 test_that("covariance matrix blocks are stable", {
   fixtures <- utop_spatial_subset_fixtures(n_obs = 8, n_pred = 2)
-  params <- modifyList(
+  params <- utop_update_params(
     fixtures$params,
-    list(nugget = FALSE, model = "Ex1", g_dist_pred = FALSE)
+    nugget = FALSE,
+    model = "Ex1",
+    g_dist_pred = FALSE
   )
   obj <- utop_object(
     fixtures$observations,
@@ -116,7 +118,7 @@ test_that("stars workflow numerical outputs are stable", {
     fixtures$observations,
     fixtures$prediction_locations,
     formula = "obs ~ 1",
-    params = list(
+    params = utop_test_params(
       r_resol = 4,
       rs_type = "regular",
       debug_level = -1,

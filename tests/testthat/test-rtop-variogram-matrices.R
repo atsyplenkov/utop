@@ -5,27 +5,27 @@ sp_obs <- spatial$observations
 sp_pred <- spatial$prediction_locations
 sf_obs <- sf_fixtures$observations
 
-params_sp <- modifyList(spatial$params, list(nugget = FALSE, model = "Ex1"))
-params_sf_cloud <- modifyList(
+params_sp <- utop_update_params(spatial$params, nugget = FALSE, model = "Ex1")
+params_sf_cloud <- utop_update_params(
   sf_fixtures$params,
-  list(cloud = TRUE, nugget = FALSE, model = "Ex1")
+  cloud = TRUE,
+  nugget = FALSE,
+  model = "Ex1"
 )
-params_sf_cloud_false <- modifyList(
+params_sf_cloud_false <- utop_update_params(
   sf_fixtures$params,
-  list(
-    cloud = FALSE,
-    nugget = FALSE,
-    model = "Ex1",
-    g_dist_est = FALSE,
-    g_dist_pred = FALSE
-  )
+  cloud = FALSE,
+  nugget = FALSE,
+  model = "Ex1",
+  g_dist_est = FALSE,
+  g_dist_pred = FALSE
 )
 
 vario_sp <- utop_variogram(sp_obs, formula = "obs ~ 1", params = params_sp)
 vario_sp_cloud <- utop_variogram(
   sp_obs,
   formula = "obs ~ 1",
-  params = modifyList(params_sp, list(cloud = TRUE))
+  params = utop_update_params(params_sp, cloud = TRUE)
 )
 vario_sf <- utop_variogram(
   sf_obs,
@@ -40,11 +40,11 @@ vario_sf_cloud <- utop_variogram(
 
 disc_sp <- utop_disc(
   sp_obs,
-  params = list(rs_type = "regular", r_resol = 4, debug_level = -1)
+  params = utop_params(rs_type = "regular", r_resol = 4, debug_level = -1)
 )
 disc_sf <- utop_disc(
   sf_obs,
-  params = list(rs_type = "regular", r_resol = 4, debug_level = -1)
+  params = utop_params(rs_type = "regular", r_resol = 4, debug_level = -1)
 )
 
 fit_sp <- utop_fit_variogram(
@@ -107,7 +107,7 @@ test_that("variogram fitting, discretization, and matrices cover spatial and sf 
 
   disc_from_vario <- utop_disc(
     vario_sp,
-    params = list(h_resol = 2, hs_type = "regular", debug_level = -1)
+    params = utop_params(h_resol = 2, hs_type = "regular", debug_level = -1)
   )
   expect_length(disc_from_vario, nrow(vario_sp@data))
   expect_length(disc_from_vario[[1]], 2)
@@ -115,7 +115,7 @@ test_that("variogram fitting, discretization, and matrices cover spatial and sf 
   expect_length(disc_sp, nrow(sp_obs))
   expect_length(disc_sf, nrow(sf_obs))
 
-  gd <- utop_g_dist(disc_sp, params = list(debug_level = -1))
+  gd <- utop_g_dist(disc_sp, params = utop_params(debug_level = -1))
   expect_equal(dim(gd), c(length(disc_sp), length(disc_sp)))
   expect_equal(gd, t(gd))
   expect_true(all(is.finite(diag(gd))))
@@ -128,15 +128,16 @@ test_that("variogram fitting, discretization, and matrices cover spatial and sf 
   expect_true(!is.null(fit_sf@variogram_cloud))
 
   varmat_reuse <- utop_var_mat(varmat_cached)
-  varmat_cv <- utop_var_mat(varmat_cached, params = list(cv = TRUE))
+  varmat_cv <- utop_var_mat(
+    varmat_cached,
+    params = utop_update_params(varmat_cached@params, cv = TRUE)
+  )
 
   varmat_list <- utop_var_mat(
     sp_obs,
     sp_pred,
     variogram_model = vm_default,
-    g_dist_pred = FALSE,
-    nugget = FALSE,
-    debug_level = -1
+    params = utop_params(g_dist_pred = FALSE, nugget = FALSE, debug_level = -1)
   )
 
   vmod_nugget <- utop_variogram_model(nugget = 0.1)
@@ -144,20 +145,24 @@ test_that("variogram fitting, discretization, and matrices cover spatial and sf 
     sp_obs,
     sp_pred,
     variogram_model = vmod_nugget,
-    nugget = FALSE,
-    r_resol = 4,
-    rs_type = "regular",
-    debug_level = -1
+    params = utop_params(
+      nugget = FALSE,
+      r_resol = 4,
+      rs_type = "regular",
+      debug_level = -1
+    )
   )
   expect_error(
     varmat_nugget <- utop_var_mat(
       sp_obs,
       sp_pred,
       variogram_model = vmod_nugget,
-      nugget = TRUE,
-      r_resol = 4,
-      rs_type = "regular",
-      debug_level = -1
+      params = utop_params(
+        nugget = TRUE,
+        r_resol = 4,
+        rs_type = "regular",
+        debug_level = -1
+      )
     ),
     NA
   )
@@ -165,10 +170,12 @@ test_that("variogram fitting, discretization, and matrices cover spatial and sf 
     varmat_obs_nugget <- utop_var_mat(
       sp_obs,
       variogram_model = vmod_nugget,
-      nugget = TRUE,
-      r_resol = 4,
-      rs_type = "regular",
-      debug_level = -1
+      params = utop_params(
+        nugget = TRUE,
+        r_resol = 4,
+        rs_type = "regular",
+        debug_level = -1
+      )
     ),
     NA
   )

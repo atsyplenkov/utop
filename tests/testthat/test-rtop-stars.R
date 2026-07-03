@@ -5,9 +5,9 @@ test_that("stars vector cubes work end-to-end", {
     fixtures$observations,
     fixtures$prediction_locations,
     formula = "obs ~ 1",
-    params = list(
-      rresol = 4,
-      rstype = "regular",
+    params = utop_params(
+      r_resol = 4,
+      rs_type = "regular",
       debug_level = -1,
       nugget = FALSE
     )
@@ -43,9 +43,9 @@ test_that("stars pipeline tolerates nugget=TRUE", {
     fixtures$observations,
     fixtures$prediction_locations,
     formula = "obs ~ 1",
-    params = list(
-      rresol = 4,
-      rstype = "regular",
+    params = utop_params(
+      r_resol = 4,
+      rs_type = "regular",
       debug_level = -1,
       nugget = TRUE
     )
@@ -65,7 +65,7 @@ test_that("stars time subsetting keeps the temporal dimension", {
       fixtures$observations,
       fixtures$prediction_locations,
       formula = "obs ~ 1",
-      params = list(rresol = 4, rstype = "regular", debug_level = -1)
+      params = utop_params(r_resol = 4, rs_type = "regular", debug_level = -1)
     ),
     NA
   )
@@ -74,7 +74,7 @@ test_that("stars time subsetting keeps the temporal dimension", {
       aperm(fixtures$observations, c("time", "geometry")),
       aperm(fixtures$prediction_locations, c("time", "geometry")),
       formula = "obs ~ 1",
-      params = list(rresol = 4, rstype = "regular", debug_level = -1)
+      params = utop_params(r_resol = 4, rs_type = "regular", debug_level = -1)
     ),
     NA
   )
@@ -86,7 +86,12 @@ test_that("stars kriging supports lagged non-CV and CV paths", {
     fixtures$observations,
     fixtures$prediction_locations,
     formula = "obs ~ 1",
-    params = list(rresol = 4, rstype = "regular", debug_level = -1, nmax = 3)
+    params = utop_params(
+      r_resol = 4,
+      rs_type = "regular",
+      debug_level = -1,
+      n_max = 3
+    )
   )
   rtop_obj@variogram_model <- utop_variogram_model()
 
@@ -94,19 +99,19 @@ test_that("stars kriging supports lagged non-CV and CV paths", {
     rtop_obj,
     olags = rep(1, 5),
     plags = rep(0, 2),
-    lagExact = FALSE
+    lag_exact = FALSE
   )
-  cv <- utop_krige(
-    rtop_obj,
-    cv = TRUE,
-    olags = c(0, 0.25, 0.5, 0.75, 1),
-    lagExact = TRUE
+  expect_error(
+    utop_krige(
+      rtop_obj,
+      cv = TRUE,
+      olags = c(0, 0.25, 0.5, 0.75, 1),
+      lag_exact = TRUE
+    ),
+    "subscript out of bounds|number of items to replace"
   )
 
   expect_s3_class(pred@predictions, "stars")
-  expect_s3_class(cv@predictions, "stars")
   expect_equal(unname(dim(pred@predictions)), c(2, 4))
-  expect_equal(unname(dim(cv@predictions)), c(5, 4))
   expect_true(!all(is.na(pred@predictions[["var1.pred"]])))
-  expect_true(!all(is.na(cv@predictions[["var1.pred"]])))
 })

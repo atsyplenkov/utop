@@ -36,11 +36,11 @@ test_that("ukTrendMatrix builds the trend basis from the RHS", {
 })
 
 test_that("block-averaged coordinate basis matches centroids for supports", {
-  params_block <- utop_params(list(
-    ukTrendSupport = "block",
-    rresol = 25,
+  params_block <- utop_params(
+    uk_trend_support = "block",
+    r_resol = 25,
     debug_level = -1
-  ))
+  )
   f_block <- utop:::ukTrendMatrix(
     obs ~ x + y,
     fixtures$observations,
@@ -68,8 +68,7 @@ test_that("universal kriging reproduces an exact attribute trend", {
     var_mat_obs = uk_base@var_mat_obs,
     var_mat_pred_obs = uk_base@var_mat_pred_obs,
     formula = obs ~ elev,
-    params = list(debug_level = -1),
-    wlim = Inf
+    params = utop_params(debug_level = -1, wlim = Inf)
   )
   expect_equal(
     ret@predictions$var1.pred,
@@ -82,9 +81,8 @@ test_that("universal kriging reproduces an exact attribute trend", {
     var_mat_obs = uk_base@var_mat_obs,
     var_mat_pred_obs = NULL,
     formula = obs ~ elev,
-    params = list(debug_level = -1),
-    cv = TRUE,
-    wlim = Inf
+    params = utop_params(debug_level = -1, wlim = Inf),
+    cv = TRUE
   )
   expect_equal(
     ret_cv@predictions$var1.pred,
@@ -105,8 +103,7 @@ test_that("universal kriging reproduces an exact coordinate trend", {
     var_mat_obs = uk_base@var_mat_obs,
     var_mat_pred_obs = uk_base@var_mat_pred_obs,
     formula = obs ~ x + y,
-    params = list(debug_level = -1),
-    wlim = Inf
+    params = utop_params(debug_level = -1, wlim = Inf)
   )
   expect_equal(
     ret@predictions$var1.pred,
@@ -118,11 +115,11 @@ test_that("universal kriging reproduces an exact coordinate trend", {
 test_that("block-support trend reproduces a trend in block-averaged basis", {
   observations <- fixtures$observations
   prediction_locations <- fixtures$prediction_locations
-  params_block <- utop_params(list(
-    ukTrendSupport = "block",
-    rresol = 25,
+  params_block <- utop_params(
+    uk_trend_support = "block",
+    r_resol = 25,
     debug_level = -1
-  ))
+  )
   f_obs <- utop:::ukTrendMatrix(obs ~ x, observations, params_block)
   f_pred <- utop:::ukTrendMatrix(obs ~ x, prediction_locations, params_block)
   observations$obs <- 4 + 5e-6 * f_obs[, 2]
@@ -133,8 +130,12 @@ test_that("block-support trend reproduces a trend in block-averaged basis", {
     var_mat_obs = uk_base@var_mat_obs,
     var_mat_pred_obs = uk_base@var_mat_pred_obs,
     formula = obs ~ x,
-    params = list(ukTrendSupport = "block", rresol = 25, debug_level = -1),
-    wlim = Inf
+    params = utop_params(
+      uk_trend_support = "block",
+      r_resol = 25,
+      debug_level = -1,
+      wlim = Inf
+    )
   )
   expect_equal(
     ret@predictions$var1.pred,
@@ -213,9 +214,9 @@ test_that("spatiotemporal universal kriging reproduces an exact trend", {
     st_obs,
     st_pred,
     formula = "obs ~ 1",
-    params = list(
-      rresol = 4,
-      rstype = "regular",
+    params = utop_params(
+      r_resol = 4,
+      rs_type = "regular",
       debug_level = -1,
       nugget = FALSE
     )
@@ -233,8 +234,7 @@ test_that("spatiotemporal universal kriging reproduces an exact trend", {
     var_mat_obs = base_obj@var_mat_obs,
     var_mat_pred_obs = base_obj@var_mat_pred_obs,
     formula = obs ~ cov,
-    params = list(debug_level = -1),
-    wlim = Inf
+    params = utop_params(debug_level = -1, wlim = Inf)
   )
   expect_equal(
     as.vector(ret@predictions[["var1.pred"]]),
@@ -246,9 +246,8 @@ test_that("spatiotemporal universal kriging reproduces an exact trend", {
     st_exact,
     var_mat_obs = base_obj@var_mat_obs,
     formula = obs ~ cov,
-    params = list(debug_level = -1),
-    cv = TRUE,
-    wlim = Inf
+    params = utop_params(debug_level = -1, wlim = Inf),
+    cv = TRUE
   )
   expect_equal(
     as.vector(ret_cv@predictions[["var1.pred"]]),
