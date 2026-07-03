@@ -22,11 +22,7 @@ fit_variogram_binned <- function(
     a_over <- findVarioOverlap(vario)
   }
 
-  if (params@model == "Ex1") {
-    implicit <- function(pars) (2 * pars[4] + pars[5]) > 1
-  } else {
-    implicit <- NULL
-  }
+  implicit <- utop_model_implicit(params@model)
 
   scres <- sceua::sceua(
     objfunc,
@@ -95,11 +91,7 @@ fit_variogram_cloud <- function(
     caches$g_dist_obs <- dists
   }
 
-  if (params@model == "Ex1") {
-    implicit <- function(pars) (2 * pars[4] + pars[5]) > 1
-  } else {
-    implicit <- NULL
-  }
+  implicit <- utop_model_implicit(params@model)
 
   scres <- sceua::sceua(
     objfunc,

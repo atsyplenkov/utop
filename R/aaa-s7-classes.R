@@ -120,7 +120,7 @@ UtopParams <- S7::new_class(
     if (length(self@model) != 1L) {
       return("model must be a character scalar")
     }
-    if (!self@model %in% c("Exp", "Sph", "Gau", "Sp1", "Ex1", "Fra")) {
+    if (!self@model %in% utop_user_models()) {
       return(paste("model", self@model, "not implemented"))
     }
 
