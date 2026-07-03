@@ -1,25 +1,6 @@
-#' @noRd
-find_par_init_default <- function(model) {
-  par_init <- data.frame(
-    parl = c(1e-06, 1e-02, 1.0e-01, 1e-5, 1e-01),
-    paru = c(5.0e+02, 1.0e7, 1.0e+07, 1.5, 1.7)
-  )
-  par_init$par0 <- 10**(0.5 * (log10(par_init$paru) + log10(par_init$parl)))
-
-  if (model %in% c("Exp", "Sph", "Gau")) {
-    par_init <- par_init[1:3, ]
-  } else if (model == "Sp1") {
-    par_init <- par_init[1:4, ]
-  } else if (model == "Ex1") {
-    par_init <- par_init
-  } else if (model == "Fra") {
-    par_init[2, ] <- c(1e-6, 2, 0.01)
-    par_init <- par_init[1:3, ]
-  } else {
-    stop(paste("model", model, "not implemented"), call. = FALSE)
-  }
-  par_init
-}
+# Note: find_par_init_default() is defined in R/models.R, where it shares the
+# per-model par_init template and override logic with the data-driven variant
+# below.
 
 #' @noRd
 find_par_init <- function(formula, observations, model) {
@@ -46,6 +27,8 @@ find_par_init <- function(formula, observations, model) {
     vario <- gstat::variogram(formula_use, observations)
     a_obs <- observations$area
   }
+
+  # Data-driven lower/upper bounds for the five Ex1-family parameters.
   par_init <- data.frame(parl = c(1:5), paru = 1, par0 = 1)
   par_init[1, 1] <- min(vario$gamma) / 10
   par_init[1, 2] <- max(vario$gamma) * 500
@@ -55,29 +38,17 @@ find_par_init <- function(formula, observations, model) {
   maxla <- (max(a_obs)^1.5) * max(vario$gamma)
   par_init[3, 1] <- min(vario$gamma) * minla / 100
   par_init[3, 2] <- max(vario$gamma) * maxla
-  par_init[4, 1] <- 1e-5
-  par_init[4, 2] <- 1.5
-  par_init[5, 1] <- 0.1
-  par_init[5, 2] <- 1.7
+  par_init[4, ] <- c(1e-5, 1.5, NA)
+  par_init[5, ] <- c(0.1, 1.7, NA)
   if (model == "Ex1") {
     par_init[4, 2] <- 1
     par_init[5, 2] <- 1
   }
+  par_init$par0 <- sqrt(par_init$parl * par_init$paru)
 
-  par_init[, 3] <- sqrt(par_init[, 1] * par_init[, 2])
-  if (model %in% c("Exp", "Sph", "Gau")) {
-    par_init <- par_init[1:3, ]
-  } else if (model == "Sp1") {
-    par_init <- par_init[1:4, ]
-  } else if (model == "Ex1") {
-    par_init <- par_init
-  } else if (model == "Fra") {
-    par_init[2, ] <- c(1e-6, 2, 0.01)
-    par_init <- par_init[1:3, ]
-  } else {
-    stop(paste("model", model, "not implemented"), call. = FALSE)
-  }
-  par_init
+  spec <- utop_model(model)
+  par_init <- utop_apply_par_init_overrides(par_init, spec)
+  par_init[seq_len(spec$n_pars), ]
 }
 
 #' Create utop parameters
