@@ -78,11 +78,7 @@ objfunc <- function(
           vario[, iacl2],
           MoreArgs = list(aOver)
         )
-        nugg <- mapply(
-          FUN = nuggEx,
-          (1 / farea + 1 / sarea - 2 * carea / (farea * sarea)) / 2,
-          MoreArgs = list(variogramModel = variogramModel)
-        )
+        nugg <- nugget_vector(farea, sarea, carea, variogramModel)
         gammar <- gammar + nugg
       }
       #         rnugg = (amp/farea+amp/sarea-2.*amp*aov/(farea*sarea))/2.
@@ -110,11 +106,7 @@ objfunc <- function(
         farea <- vario[, ia1]
         sarea <- vario[, ia2]
         carea <- aOver
-        nugg <- mapply(
-          FUN = nuggEx,
-          (1 / farea + 1 / sarea - 2 * carea / (farea * sarea)) / 2,
-          MoreArgs = list(variogramModel = variogramModel)
-        )
+        nugg <- nugget_vector(farea, sarea, carea, variogramModel)
         gammar <- gammar + nugg
       }
     }
@@ -146,11 +138,7 @@ objfunc <- function(
           vario[, iacl2],
           MoreArgs = list(aOver)
         )
-        nugg <- mapply(
-          FUN = nuggEx,
-          (1 / farea + 1 / sarea - 2 * carea / (farea * sarea)) / 2,
-          MoreArgs = list(variogramModel = variogramModel)
-        )
+        nugg <- nugget_vector(farea, sarea, carea, variogramModel)
         gammar <- gammar + nugg
       }
     } else {
@@ -170,11 +158,7 @@ objfunc <- function(
         farea <- vario[, ia1]
         sarea <- vario[, ia2]
         carea <- aOver
-        nugg <- mapply(
-          FUN = nuggEx,
-          (1 / farea + 1 / sarea - 2 * carea / (farea * sarea)) / 2,
-          MoreArgs = list(variogramModel = variogramModel)
-        )
+        nugg <- nugget_vector(farea, sarea, carea, variogramModel)
         gammar <- gammar + nugg
       }
     }

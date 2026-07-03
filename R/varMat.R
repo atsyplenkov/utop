@@ -75,16 +75,7 @@ compute_var_mat_default <- function(
 
     aObs <- utop_area(object1)
     nObs <- length(aObs)
-    fObs <- matrix(rep(aObs, nObs), ncol = nObs)
-    sObs <- t(fObs)
-    nuggObs <- matrix(
-      mapply(
-        FUN = nuggEx,
-        (1 / fObs + 1 / sObs - 2 * overlapObs / (fObs * sObs)) / 2,
-        MoreArgs = list(variogramModel = variogramModel)
-      ),
-      ncol = nObs
-    )
+    nuggObs <- nugget_matrix(aObs, aObs, overlapObs, variogramModel)
     diag(nuggObs) <- 0
     varMatObs <- varMatObs + nuggObs
   }
@@ -138,22 +129,7 @@ compute_var_mat_default <- function(
     }
 
     aPred <- utop_area(object2)
-    nObs <- length(aObs)
-    nPred <- length(aPred)
-    fPredObs <- matrix(rep(aObs, nPred), ncol = nPred)
-    sPredObs <- t(matrix(rep(aPred, nObs), ncol = nObs))
-    nuggPredObs <- matrix(
-      mapply(
-        FUN = nuggEx,
-        (1 /
-          fPredObs +
-          1 / sPredObs -
-          2 * overlapPredObs / (fPredObs * sPredObs)) /
-          2,
-        MoreArgs = list(variogramModel = variogramModel)
-      ),
-      ncol = nPred
-    )
+    nuggPredObs <- nugget_matrix(aObs, aPred, overlapPredObs, variogramModel)
     varMatPredObs <- varMatPredObs + nuggPredObs
   }
   attr(varMatObs, "variogramModel") <- variogramModel
@@ -382,19 +358,9 @@ compute_var_mat_list <- function(
     }
   }
   if (equal && variogramModel$model != "Gho") {
-    vDiag <- diag(varMatrix)
-    for (ia in 1:(ndim - 1)) {
-      for (ib in (ia + 1):ndim) {
-        varMatrix[ia, ib] <- varMatrix[ia, ib] - 0.5 * (vDiag[ia] + vDiag[ib])
-        varMatrix[ib, ia] <- varMatrix[ia, ib]
-      }
-    }
+    varMatrix <- regularize_symmetric(varMatrix)
   } else if (!missing(sub1) && !missing(sub2)) {
-    for (ia in 1:ndim) {
-      for (ib in 1:mdim) {
-        varMatrix[ia, ib] <- varMatrix[ia, ib] - 0.5 * (sub1[ia] + sub2[ib])
-      }
-    }
+    varMatrix <- regularize_cross(varMatrix, sub1, sub2)
   }
   attr(varMatrix, "variogramModel") <- variogramModel
   varMatrix

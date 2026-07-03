@@ -117,14 +117,7 @@ compute_var_mat_utop <- function(
           ncol = n_obs
         )
       }
-      v_diag_obs <- diag(var_mat_obs)
-      for (ia in seq_len(n_obs - 1L)) {
-        for (ib in (ia + 1L):n_obs) {
-          var_mat_obs[ia, ib] <- var_mat_obs[ia, ib] -
-            0.5 * (v_diag_obs[ia] + v_diag_obs[ib])
-          var_mat_obs[ib, ia] <- var_mat_obs[ia, ib]
-        }
-      }
+      var_mat_obs <- regularize_symmetric(var_mat_obs)
       object@var_mat_obs <- var_mat_obs
     } else {
       object@var_mat_obs <- compute_var_mat_list(
@@ -234,12 +227,9 @@ compute_var_mat_utop <- function(
       } else {
         v_diag_pred <- diag(var_mat_pred)
       }
-      for (ia in seq_len(n_obs)) {
-        for (ib in seq_len(n_pred)) {
-          var_mat_pred_obs[ia, ib] <- var_mat_pred_obs[ia, ib] -
-            0.5 * (v_diag_obs[ia] + v_diag_pred[ib])
-        }
-      }
+      var_mat_pred_obs <- regularize_cross(
+        var_mat_pred_obs, v_diag_obs, v_diag_pred
+      )
       object@var_mat_pred <- var_mat_pred
       object@var_mat_pred_obs <- var_mat_pred_obs
     } else {
@@ -277,15 +267,8 @@ compute_var_mat_utop <- function(
           partial_overlap = params_obj@partial_overlap
         )
       }
-      f_obs <- matrix(rep(a_obs, n_obs), ncol = n_obs)
-      s_obs <- t(f_obs)
-      nugg_obs <- matrix(
-        mapply(
-          FUN = nuggEx,
-          (1 / f_obs + 1 / s_obs - 2 * overlap_obs / (f_obs * s_obs)) / 2,
-          MoreArgs = list(variogramModel = variogram_model)
-        ),
-        ncol = n_obs
+      nugg_obs <- nugget_matrix(
+        a_obs, a_obs, overlap_obs, variogram_model
       )
       diag(nugg_obs) <- 0
       object@var_mat_obs <- object@var_mat_obs + nugg_obs
@@ -301,20 +284,8 @@ compute_var_mat_utop <- function(
         )
       }
       a_pred <- utop_area(prediction_locations)
-      n_pred <- length(a_pred)
-      f_pred_obs <- matrix(rep(a_obs, n_pred), ncol = n_pred)
-      s_pred_obs <- t(matrix(rep(a_pred, n_obs), ncol = n_obs))
-      nugg_pred_obs <- matrix(
-        mapply(
-          FUN = nuggEx,
-          (1 /
-            f_pred_obs +
-            1 / s_pred_obs -
-            2 * overlap_pred_obs / (f_pred_obs * s_pred_obs)) /
-            2,
-          MoreArgs = list(variogramModel = variogram_model)
-        ),
-        ncol = n_pred
+      nugg_pred_obs <- nugget_matrix(
+        a_obs, a_pred, overlap_pred_obs, variogram_model
       )
       object@var_mat_pred_obs <- object@var_mat_pred_obs + nugg_pred_obs
     }
