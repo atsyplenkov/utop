@@ -136,43 +136,42 @@ fit_variogram_cloud <- function(
 }
 
 #' @noRd
-fit_variogram_impl <- function(state, params = NULL, iprint = 0, ...) {
-  state$params <- utop_replace_params(
-    current = state$params,
+fit_variogram_impl <- function(object, params = NULL, iprint = 0, ...) {
+  object@params <- utop_replace_params(
+    current = object@params,
     params = params,
-    observations = state$observations,
-    formula = state$formula
+    observations = object@observations,
+    formula = object@formula
   )
-  params_obj <- state$params
+  params_obj <- object@params
 
   if (
-    (params_obj@cloud && is.null(state$variogram_cloud)) ||
-      (!params_obj@cloud && is.null(state$variogram))
+    (params_obj@cloud && is.null(object@variogram_cloud)) ||
+      (!params_obj@cloud && is.null(object@variogram))
   ) {
-    obj <- utop_variogram(utop_utop_from_state(state), ...)
-    state <- utop_state_from_utop(obj)
+    object <- utop_variogram(object, ...)
   }
 
-  if (params_obj@nugget && is.null(state$overlap_obs)) {
-    state$overlap_obs <- find_overlap(
-      state$observations,
-      state$observations,
+  if (params_obj@nugget && is.null(object@overlap_obs)) {
+    object@overlap_obs <- find_overlap(
+      object@observations,
+      object@observations,
       partial_overlap = TRUE
     )
   }
 
   if (params_obj@cloud) {
-    dists <- if (params_obj@g_dist_est && !is.null(state$g_dist_obs)) {
-      state$g_dist_obs
-    } else if (!is.null(state$d_obs)) {
-      state$d_obs
+    dists <- if (params_obj@g_dist_est && !is.null(object@g_dist_obs)) {
+      object@g_dist_obs
+    } else if (!is.null(object@d_obs)) {
+      object@d_obs
     } else {
       NULL
     }
-    a_over <- if (params_obj@nugget) state$overlap_obs else NULL
+    a_over <- if (params_obj@nugget) object@overlap_obs else NULL
     fit <- fit_variogram_cloud(
-      state$variogram_cloud,
-      observations = state$observations,
+      object@variogram_cloud,
+      observations = object@observations,
       params = params_obj,
       dists = dists,
       a_over = a_over,
@@ -180,20 +179,20 @@ fit_variogram_impl <- function(state, params = NULL, iprint = 0, ...) {
       ...
     )
   } else {
-    dists <- if (params_obj@g_dist_est && !is.null(state$g_dist_bin)) {
-      state$g_dist_bin
-    } else if (!is.null(state$d_bin)) {
-      state$d_bin
+    dists <- if (params_obj@g_dist_est && !is.null(object@g_dist_bin)) {
+      object@g_dist_bin
+    } else if (!is.null(object@d_bin)) {
+      object@d_bin
     } else {
       NULL
     }
     a_over <- if (params_obj@nugget) {
-      findVarioOverlap(utop_variogram_data(state$variogram))
+      findVarioOverlap(utop_variogram_data(object@variogram))
     } else {
       NULL
     }
     fit <- fit_variogram_binned(
-      state$variogram,
+      object@variogram,
       params = params_obj,
       dists = dists,
       a_over = a_over,
@@ -202,22 +201,22 @@ fit_variogram_impl <- function(state, params = NULL, iprint = 0, ...) {
     )
   }
 
-  state$variogram_model <- fit$model
-  state$var_fit <- fit$var_fit
+  object@variogram_model <- fit$model
+  object@var_fit <- fit$var_fit
   if (!is.null(fit$caches$d_bin)) {
-    state$d_bin <- fit$caches$d_bin
+    object@d_bin <- fit$caches$d_bin
   }
   if (!is.null(fit$caches$g_dist_bin)) {
-    state$g_dist_bin <- fit$caches$g_dist_bin
+    object@g_dist_bin <- fit$caches$g_dist_bin
   }
   if (!is.null(fit$caches$d_obs)) {
-    state$d_obs <- fit$caches$d_obs
+    object@d_obs <- fit$caches$d_obs
   }
   if (!is.null(fit$caches$g_dist_obs)) {
-    state$g_dist_obs <- fit$caches$g_dist_obs
+    object@g_dist_obs <- fit$caches$g_dist_obs
   }
 
-  state
+  object
 }
 
 #' Fit a variogram model
@@ -242,13 +241,12 @@ S7::method(utop_fit_variogram, Utop) <- function(
   iprint = 0,
   ...
 ) {
-  state <- fit_variogram_impl(
-    utop_state_from_utop(object),
+  fit_variogram_impl(
+    object,
     params = params,
     iprint = iprint,
     ...
   )
-  utop_utop_from_state(state)
 }
 
 S7::method(utop_fit_variogram, UtopVariogram) <- function(

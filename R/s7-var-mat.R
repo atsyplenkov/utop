@@ -429,7 +429,7 @@ S7::method(utop_var_mat, utop_sf_class) <- function(object, ...) {
   if (is.matrix(result)) {
     return(result)
   }
-  utop_utop_from_state(list(
+  Utop(
     observations = object,
     prediction_locations = object2,
     params = args$params,
@@ -438,7 +438,7 @@ S7::method(utop_var_mat, utop_sf_class) <- function(object, ...) {
     var_mat_pred = result$varMatPred,
     overlap_obs = result$overlapObs,
     overlap_pred_obs = result$overlapPredObs
-  ))
+  )
 }
 
 S7::method(utop_var_mat, utop_stars_class) <- function(object, ...) {
@@ -468,7 +468,7 @@ S7::method(utop_var_mat, utop_stars_class) <- function(object, ...) {
   if (is.matrix(result)) {
     return(result)
   }
-  utop_utop_from_state(list(
+  Utop(
     observations = object,
     prediction_locations = object2,
     params = args$params,
@@ -477,5 +477,5 @@ S7::method(utop_var_mat, utop_stars_class) <- function(object, ...) {
     var_mat_pred = result$varMatPred,
     overlap_obs = result$overlapObs,
     overlap_pred_obs = result$overlapPredObs
-  ))
+  )
 }

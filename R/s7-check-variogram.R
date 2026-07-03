@@ -1,56 +1,3 @@
-#' @noRd
-utop_check_variogram_state <- function(object) {
-  state <- list(
-    observations = object@observations,
-    formulaString = object@formula,
-    params = object@params
-  )
-  if (!is.null(object@prediction_locations)) {
-    state$predictionLocations <- object@prediction_locations
-  }
-  if (!is.null(object@variogram_model)) {
-    state$variogramModel <- object@variogram_model
-  }
-  if (!is.null(object@variogram)) {
-    state$variogram <- utop_tag_variogram_class(
-      utop_variogram_data(object@variogram),
-      cloud = FALSE
-    )
-  }
-  if (!is.null(object@variogram_cloud)) {
-    state$variogramCloud <- utop_tag_variogram_class(
-      utop_variogram_data(object@variogram_cloud),
-      cloud = TRUE
-    )
-  }
-  if (!is.null(object@var_fit)) {
-    state$varFit <- object@var_fit
-  }
-  if (!is.null(object@d_obs)) {
-    state$dObs <- object@d_obs
-  }
-  if (!is.null(object@g_dist_obs)) {
-    state$gDistObs <- object@g_dist_obs
-  }
-  state
-}
-
-#' @noRd
-compute_check_variogram_utop <- function(object, params = NULL, ...) {
-  object@params <- utop_replace_params(
-    current = object@params,
-    params = params,
-    observations = object@observations,
-    formula = object@formula
-  )
-  state <- utop_check_variogram_state(object)
-  state <- compute_check_variogram(state, params = object@params, ...)
-  if ("checkVario" %in% names(state)) {
-    object@check_vario <- state$checkVario
-  }
-  object
-}
-
 #' Create diagnostic variogram checks
 #'
 #' @param object A [Utop] object or [UtopVariogramModel].
@@ -68,7 +15,7 @@ utop_check_variogram <- S7::new_generic(
 )
 
 S7::method(utop_check_variogram, Utop) <- function(object, params = NULL, ...) {
-  compute_check_variogram_utop(object, params = params, ...)
+  compute_check_variogram(object, params = params, ...)
 }
 
 S7::method(utop_check_variogram, UtopVariogramModel) <- function(

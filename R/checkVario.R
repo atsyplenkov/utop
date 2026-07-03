@@ -25,12 +25,13 @@ compute_check_variogram <- function(
   params = NULL,
   ...
 ) {
-  params_obj <- utop_replace_params(
-    current = object$params,
+  object@params <- utop_replace_params(
+    current = object@params,
     params = params,
-    observations = object$observations,
-    formula = object$formulaString
+    observations = object@observations,
+    formula = object@formula
   )
+  params_obj <- object@params
   dots <- list(...)
 
   askpar <- par("ask")
@@ -39,22 +40,23 @@ compute_check_variogram <- function(
   } else {
     par("ask" = FALSE)
   }
+  variogram_model <- object@variogram_model
   variogramModel <- if (
-    S7::S7_inherits(object$variogramModel, UtopVariogramModel)
+    S7::S7_inherits(variogram_model, UtopVariogramModel)
   ) {
-    coerce_variogram_model(object$variogramModel)
+    coerce_variogram_model(variogram_model)
   } else {
-    object$variogramModel
+    variogram_model
   }
   # variogram preferred as sampleVariogram, if not variogramCloud (if exisiting, NULL otherwise)
-  sampleVariogram <- object$variogram
+  sampleVariogram <- object@variogram
   if (is.null(sampleVariogram)) {
-    sampleVariogram <- object$variogramCloud
+    sampleVariogram <- object@variogram_cloud
   }
-  observations <- object$observations
-  formulaString <- object$formulaString
+  observations <- object@observations
+  formulaString <- object@formula
   amul <- params_obj@amul
-  varFit <- object$varFit
+  varFit <- object@var_fit
   abins <- adfunc(NULL, observations, amul)
   observations$acl <- findInterval(observations$area, abins)
   observations$n <- 1
@@ -91,31 +93,31 @@ compute_check_variogram <- function(
   if (cloud || variogram_is_cloud(sampleVariogram)) {
     print("Creating cloud variogram; this might take some time")
     if (!variogram_is_cloud(sampleVariogram)) {
-      if (!("variogramCloud" %in% names(object))) {
+      if (is.null(object@variogram_cloud)) {
         vario_cloud <- utop_variogram(
           observations,
           formula = formulaString,
           params = params_obj,
           cloud = TRUE
         )
-        object$variogramCloud <- utop_tag_variogram_class(
+        object@variogram_cloud <- utop_tag_variogram_class(
           utop_variogram_data(vario_cloud),
           cloud = TRUE
         )
       }
-      clvar <- object$variogramCloud
+      clvar <- object@variogram_cloud
     } else {
       clvar <- sampleVariogram
     }
     if (gDist) {
-      if (!("gDistObs" %in% names(object))) {
-        if (!("dObs" %in% names(object))) {
-          object$dObs <- utop_disc(observations, params = params_obj)
+      if (is.null(object@g_dist_obs)) {
+        if (is.null(object@d_obs)) {
+          object@d_obs <- utop_disc(observations, params = params_obj)
         }
-        dObs <- object$dObs
-        object$gDistObs <- compute_g_dist_list(dObs, dObs, params = params_obj)
+        dObs <- object@d_obs
+        object@g_dist_obs <- compute_g_dist_list(dObs, dObs, params = params_obj)
       }
-      gdists <- object$gDistObs
+      gdists <- object@g_dist_obs
       gDiag <- diag(gdists)
       clvar$gdist <- 0
       for (ic in 1:dim(clvar)[1]) {
@@ -197,9 +199,9 @@ compute_check_variogram <- function(
     }
   } else {
     if (is.null(sampleVariogram)) {
-      object$checkVario <- compute_check_variogram_model(
-        object$variogramModel,
-        observations = object$observations,
+      object@check_vario <- compute_check_variogram_model(
+        object@variogram_model,
+        observations = object@observations,
         params = params_obj,
         acor = acor,
         log = log,
@@ -208,10 +210,10 @@ compute_check_variogram <- function(
         ...
       )
     } else {
-      object$checkVario <- compute_check_variogram_model(
-        object$variogramModel,
+      object@check_vario <- compute_check_variogram_model(
+        object@variogram_model,
         sampleVariogram = sampleVariogram,
-        observations = object$observations,
+        observations = object@observations,
         params = params_obj,
         acor = acor,
         log = log,
