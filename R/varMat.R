@@ -277,6 +277,7 @@ compute_var_mat_list <- function(
         "maxdist",
         "fun",
         "debug.level",
+        "variogramModel",
         "utop_point_coordinates",
         "utop_dists_n1",
         "vred"
