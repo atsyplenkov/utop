@@ -38,9 +38,7 @@ compute_check_variogram <- function(
     par("ask" = FALSE)
   }
   variogram_model <- object@variogram_model
-  variogramModel <- if (
-    S7::S7_inherits(variogram_model, UtopVariogramModel)
-  ) {
+  variogramModel <- if (S7::S7_inherits(variogram_model, UtopVariogramModel)) {
     coerce_variogram_model(variogram_model)
   } else {
     variogram_model
@@ -112,7 +110,11 @@ compute_check_variogram <- function(
           object@d_obs <- utop_disc(observations, params = params_obj)
         }
         dObs <- object@d_obs
-        object@g_dist_obs <- compute_g_dist_list(dObs, dObs, params = params_obj)
+        object@g_dist_obs <- compute_g_dist_list(
+          dObs,
+          dObs,
+          params = params_obj
+        )
       }
       gdists <- object@g_dist_obs
       gDiag <- diag(gdists)

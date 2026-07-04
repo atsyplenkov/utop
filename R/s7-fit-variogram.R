@@ -241,12 +241,7 @@ S7::method(utop_fit_variogram, Utop) <- function(
   iprint = 0,
   ...
 ) {
-  fit_variogram_impl(
-    object,
-    params = params,
-    iprint = iprint,
-    ...
-  )
+  fit_variogram_impl(object, params = params, iprint = iprint, ...)
 }
 
 S7::method(utop_fit_variogram, UtopVariogram) <- function(

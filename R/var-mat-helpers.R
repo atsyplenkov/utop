@@ -16,7 +16,11 @@ nugget_matrix <- function(a1, a2, overlap, variogramModel) {
   s <- t(matrix(rep(a2, length(a1)), ncol = length(a1)))
   ared <- (1 / f + 1 / s - 2 * overlap / (f * s)) / 2
   matrix(
-    mapply(FUN = nuggEx, ared, MoreArgs = list(variogramModel = variogramModel)),
+    mapply(
+      FUN = nuggEx,
+      ared,
+      MoreArgs = list(variogramModel = variogramModel)
+    ),
     ncol = length(a2)
   )
 }
@@ -67,7 +71,13 @@ nugget_vector <- function(a1, a2, overlap, variogramModel) {
 # across workers; otherwise a single mapply call is used. The result is NOT
 # regularised -- call regularize_symmetric() or regularize_cross() afterwards.
 #' @noRd
-eval_var_mat_g_dist <- function(g_dist, n_rows, n_cols, params_obj, variogram_model) {
+eval_var_mat_g_dist <- function(
+  g_dist,
+  n_rows,
+  n_cols,
+  params_obj,
+  variogram_model
+) {
   if (
     !is.null(params_obj@n_clus) &&
       params_obj@n_clus > 1 &&

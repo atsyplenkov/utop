@@ -33,11 +33,7 @@ utop_ex1_implicit <- function(pars) (2 * pars[4] + pars[5]) > 1
 utop_models <- function() {
   list(
     Exp = list(imodel_code = 1L, n_pars = 3L),
-    Ex1 = list(
-      imodel_code = 2L,
-      n_pars = 5L,
-      implicit = utop_ex1_implicit
-    ),
+    Ex1 = list(imodel_code = 2L, n_pars = 5L, implicit = utop_ex1_implicit),
     Gau = list(imodel_code = 3L, n_pars = 3L),
     Sph = list(imodel_code = 6L, n_pars = 3L),
     Sp1 = list(imodel_code = 7L, n_pars = 4L),

@@ -81,7 +81,11 @@ compute_var_mat_utop <- function(
         object@g_dist_obs
       }
       var_mat_obs <- eval_var_mat_g_dist(
-        g_dist_obs, n_obs, n_obs, params_obj, variogram_model
+        g_dist_obs,
+        n_obs,
+        n_obs,
+        params_obj,
+        variogram_model
       )
       var_mat_obs <- regularize_symmetric(var_mat_obs)
       object@var_mat_obs <- var_mat_obs
@@ -148,7 +152,11 @@ compute_var_mat_utop <- function(
       )
 
       var_mat_pred_obs <- eval_var_mat_g_dist(
-        g_dist_pred_obs, n_obs, n_pred, params_obj, variogram_model
+        g_dist_pred_obs,
+        n_obs,
+        n_pred,
+        params_obj,
+        variogram_model
       )
 
       if (
@@ -160,7 +168,9 @@ compute_var_mat_utop <- function(
         v_diag_pred <- diag(var_mat_pred)
       }
       var_mat_pred_obs <- regularize_cross(
-        var_mat_pred_obs, v_diag_obs, v_diag_pred
+        var_mat_pred_obs,
+        v_diag_obs,
+        v_diag_pred
       )
       object@var_mat_pred <- var_mat_pred
       object@var_mat_pred_obs <- var_mat_pred_obs
@@ -199,9 +209,7 @@ compute_var_mat_utop <- function(
           partial_overlap = params_obj@partial_overlap
         )
       }
-      nugg_obs <- nugget_matrix(
-        a_obs, a_obs, overlap_obs, variogram_model
-      )
+      nugg_obs <- nugget_matrix(a_obs, a_obs, overlap_obs, variogram_model)
       diag(nugg_obs) <- 0
       object@var_mat_obs <- object@var_mat_obs + nugg_obs
     }
@@ -217,7 +225,10 @@ compute_var_mat_utop <- function(
       }
       a_pred <- utop_area(prediction_locations)
       nugg_pred_obs <- nugget_matrix(
-        a_obs, a_pred, overlap_pred_obs, variogram_model
+        a_obs,
+        a_pred,
+        overlap_pred_obs,
+        variogram_model
       )
       object@var_mat_pred_obs <- object@var_mat_pred_obs + nugg_pred_obs
     }
