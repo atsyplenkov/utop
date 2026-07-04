@@ -224,7 +224,6 @@ compute_var_mat_list <- function(
       a1 <- d1[[ia]]
       a1 <- utop_point_coordinates(a1)
 
-      ip1 <- dim(a1)[1]
       first <- ifelse(equal, ia, 1)
       lorder <- c(first:mdim)
       if (!is.null(coor1) && !is.null(coor2) && maxdist < Inf) {
@@ -313,7 +312,6 @@ compute_var_mat_list <- function(
       t1 <- proc.time()[[3]]
       a1 <- d1[[ia]]
       a1 <- utop_point_coordinates(a1)
-      ip1 <- dim(a1)[1]
       first <- ifelse(equal, ia, 1)
       lorder <- c(first:mdim)
       if (!missing(coor1) && !missing(coor2) && maxdist < Inf) {
@@ -332,7 +330,6 @@ compute_var_mat_list <- function(
             variogramModel = variogramModel
           )
         )
-        #        lmat = lvmat[[1]]
         if (!equal) {
           varMatrix[ia, ] <- lmat
         } else {
@@ -340,7 +337,6 @@ compute_var_mat_list <- function(
           varMatrix[lorder, ia] <- lmat
         }
       }
-      #        print(acdf)
       t2 <- proc.time()[[3]]
       if (debug.level > 0) {
         print(paste(

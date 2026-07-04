@@ -1,6 +1,3 @@
-#a) plot 3-d varios
-#b) plot upscaled point variograms
-
 #' @noRd
 errorBar <- function(x, y, upper, lower = upper, length = 0.1, ...) {
   if (
