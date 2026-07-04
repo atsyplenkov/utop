@@ -143,13 +143,12 @@ compute_check_variogram <- function(
     gammar$nnp <- sqrt(gammar$np) / max(sqrt(gammar$np)) * 20
     gmax <- max(gammar[, c("gamma", "gammar")])
     gmin <- quantile(c(gammar$gammar, gammar$gamma), 0.05)
-    nnp <- 0 # dummy variable to avoid check warning
     plot(
       gammar ~ gamma,
       gammar,
       xlim = c(ifelse(length(grep("x", log)) > 0, gmin, 0), gmax),
       ylim = c(ifelse(length(grep("x", log)) > 0, gmin, 0), gmax),
-      cex = sqrt(nnp),
+      cex = 0,
       xlab = "gamma",
       ylab = "gamma regularized",
       log = log
@@ -177,7 +176,6 @@ compute_check_variogram <- function(
     )
     xmax <- max(c(ngammar$gamma, ngammar$gammar))
     xmin <- quantile(c(ngammar$gammar, ngammar$gamma), 0.05)
-    nnp <- 0 # dummy variable to avoid check warning
 
     plot(
       gammar ~ gamma,
@@ -186,7 +184,7 @@ compute_check_variogram <- function(
       ylab = "gamma",
       xlim = c(ifelse(length(grep("x", log)) > 0, xmin, 0), xmax),
       ylim = c(ifelse(length(grep("x", log)) > 0, xmin, 0), xmax),
-      cex = sqrt(nnp),
+      cex = 0,
       pch = 16,
       log = log
     )
