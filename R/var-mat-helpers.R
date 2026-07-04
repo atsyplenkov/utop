@@ -59,3 +59,50 @@ nugget_vector <- function(a1, a2, overlap, variogramModel) {
   ared <- (1 / a1 + 1 / a2 - 2 * overlap / (a1 * a2)) / 2
   mapply(FUN = nuggEx, ared, MoreArgs = list(variogramModel = variogramModel))
 }
+
+# Evaluate varioEx over a geostatistical-distance structure (a list or matrix
+# as produced by compute_g_dist_list), returning the raw semivariance matrix
+# of shape n_rows x n_cols. Handles the optional parallel path: when params
+# requests a cluster and the problem is large enough, columns are evaluated
+# across workers; otherwise a single mapply call is used. The result is NOT
+# regularised -- call regularize_symmetric() or regularize_cross() afterwards.
+#' @noRd
+eval_var_mat_g_dist <- function(g_dist, n_rows, n_cols, params_obj, variogram_model) {
+  if (
+    !is.null(params_obj@n_clus) &&
+      params_obj@n_clus > 1 &&
+      n_rows > params_obj@cn_areas &&
+      requireNamespace("parallel", quietly = TRUE)
+  ) {
+    cl <- utop_cluster_impl(
+      params_obj@n_clus,
+      type = params_obj@clus_type,
+      outfile = params_obj@outfile
+    )
+    matrix(
+      unlist(parallel::parLapply(
+        cl,
+        seq_len(n_cols),
+        fun = function(x, gDist, variogramModel) {
+          mapply(gDist[, x], FUN = function(y) {
+            varioEx(y, variogramModel)
+          })
+        },
+        gDist = g_dist,
+        variogramModel = variogram_model
+      )),
+      nrow = n_rows,
+      ncol = n_cols
+    )
+  } else {
+    matrix(
+      mapply(
+        FUN = varioEx,
+        g_dist,
+        MoreArgs = list(variogramModel = variogram_model)
+      ),
+      nrow = n_rows,
+      ncol = n_cols
+    )
+  }
+}

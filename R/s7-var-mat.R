@@ -80,43 +80,9 @@ compute_var_mat_utop <- function(
         )
         object@g_dist_obs
       }
-      if (
-        !is.null(params_obj@n_clus) &&
-          params_obj@n_clus > 1 &&
-          n_obs > params_obj@cn_areas &&
-          requireNamespace("parallel", quietly = TRUE)
-      ) {
-        cl <- utop_cluster_impl(
-          params_obj@n_clus,
-          type = params_obj@clus_type,
-          outfile = params_obj@outfile
-        )
-        var_mat_obs <- matrix(
-          unlist(parallel::parLapply(
-            cl,
-            seq_len(n_obs),
-            fun = function(x, gDistObs, variogramModel) {
-              mapply(gDistObs[, x], FUN = function(y) {
-                varioEx(y, variogramModel)
-              })
-            },
-            gDistObs = g_dist_obs,
-            variogramModel = variogram_model
-          )),
-          nrow = n_obs,
-          ncol = n_obs
-        )
-      } else {
-        var_mat_obs <- matrix(
-          mapply(
-            g_dist_obs,
-            FUN = varioEx,
-            MoreArgs = list(variogramModel = variogram_model)
-          ),
-          nrow = n_obs,
-          ncol = n_obs
-        )
-      }
+      var_mat_obs <- eval_var_mat_g_dist(
+        g_dist_obs, n_obs, n_obs, params_obj, variogram_model
+      )
       var_mat_obs <- regularize_symmetric(var_mat_obs)
       object@var_mat_obs <- var_mat_obs
     } else {
@@ -181,43 +147,9 @@ compute_var_mat_utop <- function(
         ncol = 1L
       )
 
-      if (
-        !is.null(params_obj@n_clus) &&
-          params_obj@n_clus > 1 &&
-          n_obs > params_obj@cn_areas &&
-          requireNamespace("parallel", quietly = TRUE)
-      ) {
-        cl <- utop_cluster_impl(
-          n_clus = params_obj@n_clus,
-          type = params_obj@clus_type,
-          outfile = params_obj@outfile
-        )
-        var_mat_pred_obs <- matrix(
-          unlist(parallel::parLapply(
-            cl,
-            seq_len(n_pred),
-            fun = function(x, gDistPredObs, variogramModel) {
-              mapply(gDistPredObs[, x], FUN = function(y) {
-                varioEx(y, variogramModel)
-              })
-            },
-            gDistPredObs = g_dist_pred_obs,
-            variogramModel = variogram_model
-          )),
-          nrow = n_obs,
-          ncol = n_pred
-        )
-      } else {
-        var_mat_pred_obs <- matrix(
-          mapply(
-            FUN = varioEx,
-            g_dist_pred_obs,
-            MoreArgs = list(variogramModel = variogram_model)
-          ),
-          nrow = n_obs,
-          ncol = n_pred
-        )
-      }
+      var_mat_pred_obs <- eval_var_mat_g_dist(
+        g_dist_pred_obs, n_obs, n_pred, params_obj, variogram_model
+      )
 
       if (
         is.null(dim(var_mat_pred)) ||
