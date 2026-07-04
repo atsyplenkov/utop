@@ -189,6 +189,29 @@ update_utop_params <- function(params, values) {
   params
 }
 
+# Split `...` into (params, runtime, dots) for functions that accept a mix of
+# runtime-only arguments (e.g. nsim, cv) and passthrough dots. Any utop
+# parameter name found outside `params` is rejected with an error pointing the
+# caller at the UtopParams API. `runtime_names` is the per-call site list of
+# argument names that should be peeled off as runtime arguments.
+#' @noRd
+utop_split_runtime <- function(params, runtime_names, ...) {
+  dots <- list(...)
+  runtime <- dots[intersect(names(dots), runtime_names)]
+  dots <- dots[!names(dots) %in% runtime_names]
+
+  inline_params <- intersect(names(dots), utop_param_fields())
+  if (length(inline_params) > 0L) {
+    stop(
+      "pass utop parameters via a UtopParams object in `params`, not as individual arguments: ",
+      paste(inline_params, collapse = ", "),
+      call. = FALSE
+    )
+  }
+
+  list(params = params, runtime = runtime, dots = dots)
+}
+
 #' @noRd
 utop_wrap_variogram_result <- function(data, cloud = FALSE) {
   if (cloud) {

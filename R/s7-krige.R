@@ -136,30 +136,20 @@ utop_krige_runtime_only <- function(runtime) {
 
 #' @noRd
 utop_krige_extra_params <- function(params, ...) {
-  dots <- list(...)
-  runtime_names <- c(
-    "cv",
-    "nsim",
-    "lambda",
-    "olags",
-    "plags",
-    "lag_exact",
-    "sel",
-    "wret"
+  utop_split_runtime(
+    params,
+    runtime_names = c(
+      "cv",
+      "nsim",
+      "lambda",
+      "olags",
+      "plags",
+      "lag_exact",
+      "sel",
+      "wret"
+    ),
+    ...
   )
-  runtime <- dots[intersect(names(dots), runtime_names)]
-  dots <- dots[!names(dots) %in% runtime_names]
-
-  inline_params <- intersect(names(dots), utop_param_fields())
-  if (length(inline_params) > 0L) {
-    stop(
-      "pass utop parameters via a UtopParams object in `params`, not as individual arguments: ",
-      paste(inline_params, collapse = ", "),
-      call. = FALSE
-    )
-  }
-
-  list(params = params, runtime = runtime, dots = dots)
 }
 
 S7::method(utop_krige, utop_sf_class) <- function(

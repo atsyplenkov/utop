@@ -1,28 +1,18 @@
 #' @noRd
 utop_sim_runtime_params <- function(params, ...) {
-  dots <- list(...)
-  runtime_names <- c(
-    "nsim",
-    "logdist",
-    "beta",
-    "dump",
-    "large_first",
-    "replace",
-    "debug_level"
+  utop_split_runtime(
+    params,
+    runtime_names = c(
+      "nsim",
+      "logdist",
+      "beta",
+      "dump",
+      "large_first",
+      "replace",
+      "debug_level"
+    ),
+    ...
   )
-  runtime <- dots[intersect(names(dots), runtime_names)]
-  dots <- dots[!names(dots) %in% runtime_names]
-
-  inline_params <- intersect(names(dots), utop_param_fields())
-  if (length(inline_params) > 0L) {
-    stop(
-      "pass utop parameters via a UtopParams object in `params`, not as individual arguments: ",
-      paste(inline_params, collapse = ", "),
-      call. = FALSE
-    )
-  }
-
-  list(params = params, runtime = runtime, dots = dots)
 }
 
 #' @noRd
