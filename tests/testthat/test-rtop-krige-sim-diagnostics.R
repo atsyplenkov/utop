@@ -37,7 +37,7 @@ if (!identical(Sys.getenv("UTOP_DIAGNOSTICS"), "true")) {
 
   test_that("utop_krige covers sel, cvInfo, and uncertainty branches", {
     fit_sel <- fit_base
-    fit_sel$prediction_locations <- fit_sel$prediction_locations[1, ]
+    fit_sel@prediction_locations <- fit_sel@prediction_locations[1, ]
     fit_sel@observations$unc <- rep(0.05, nrow(fit_sel@observations))
     fit_base@observations$unc <- rep(0.05, nrow(fit_base@observations))
     krige_sel <- utop_krige(fit_sel, sel = 1)
@@ -48,7 +48,7 @@ if (!identical(Sys.getenv("UTOP_DIAGNOSTICS"), "true")) {
     expect_true(all(
       c("var1.pred", "var1.var") %in% names(krige_sel@predictions)
     ))
-    expect_true("cvInfo" %in% names(krige_cv))
+    expect_true(!is.null(krige_cv@cv_info))
     expect_true(nrow(krige_cv@cv_info) > 0)
   })
 
@@ -73,8 +73,8 @@ if (!identical(Sys.getenv("UTOP_DIAGNOSTICS"), "true")) {
     )
 
     bad_replace <- fit
-    bad_replace$prediction_locations <- bad_replace@observations[1:2, ]
-    bad_replace$prediction_locations$replaceNumber <- c(
+    bad_replace@prediction_locations <- bad_replace@observations[1:2, ]
+    bad_replace@prediction_locations$replaceNumber <- c(
       1,
       nrow(bad_replace@observations) + 1
     )
@@ -84,11 +84,11 @@ if (!identical(Sys.getenv("UTOP_DIAGNOSTICS"), "true")) {
     )
 
     sim_input <- fit
-    sim_input$prediction_locations <- sim_input@observations
-    sim_input$prediction_locations$replaceNumber <- seq_len(nrow(
-      sim_input$prediction_locations
+    sim_input@prediction_locations <- sim_input@observations
+    sim_input@prediction_locations$replaceNumber <- seq_len(nrow(
+      sim_input@prediction_locations
     ))
-    sim_input$prediction_locations$area <- NULL
+    sim_input@prediction_locations$area <- NULL
 
     set.seed(1501)
     sim <- suppressWarnings(utop_sim(
@@ -147,9 +147,9 @@ if (!identical(Sys.getenv("UTOP_DIAGNOSTICS"), "true")) {
     utop_cluster(1, action = "stop")
 
     expect_true(S7::S7_inherits(checked_rtop, Utop))
-    expect_true("utop_check_variogram" %in% names(checked_rtop))
+    expect_true(!is.null(checked_rtop@check_vario))
     expect_true(S7::S7_inherits(checked_rtop_cloud, Utop))
-    expect_true("utop_check_variogram" %in% names(checked_rtop_cloud))
+    expect_true(!is.null(checked_rtop_cloud@check_vario))
     expect_true(is.list(checked_model))
     expect_true(is.matrix(checked_model$vmats))
     expect_true(is.list(checked_model_cloud))

@@ -44,9 +44,11 @@ compute_check_variogram <- function(
     variogram_model
   }
   # variogram preferred as sampleVariogram, if not variogramCloud (if exisiting, NULL otherwise)
-  sampleVariogram <- object@variogram
+  # Coerce S7 variogram objects to data.frame; downstream code uses $ / [
+  # access which S7 objects do not support.
+  sampleVariogram <- utop_as_variogram_df(object@variogram)
   if (is.null(sampleVariogram)) {
-    sampleVariogram <- object@variogram_cloud
+    sampleVariogram <- utop_as_variogram_df(object@variogram_cloud)
   }
   observations <- object@observations
   formulaString <- object@formula
@@ -89,18 +91,17 @@ compute_check_variogram <- function(
     print("Creating cloud variogram; this might take some time")
     if (!variogram_is_cloud(sampleVariogram)) {
       if (is.null(object@variogram_cloud)) {
-        vario_cloud <- utop_variogram(
+        object@variogram_cloud <- utop_variogram(
           observations,
           formula = formulaString,
           params = params_obj,
           cloud = TRUE
         )
-        object@variogram_cloud <- utop_tag_variogram_class(
-          utop_variogram_data(vario_cloud),
-          cloud = TRUE
-        )
       }
-      clvar <- object@variogram_cloud
+      clvar <- utop_as_variogram_df(object@variogram_cloud)
+      # plot(clvar) below dispatches to gstat::plot.variogramCloud, which
+      # requires class "variogramCloud"; tag the data.frame accordingly.
+      class(clvar) <- c("variogramCloud", "data.frame")
     } else {
       clvar <- sampleVariogram
     }
@@ -249,6 +250,9 @@ compute_check_variogram_model <- function(
     variogramModel <- object
     variogram_model_s7 <- utop_variogram_model_from_list(object)
   }
+  # Coerce S7 variogram objects to data.frame; downstream code uses $ / [
+  # access which S7 objects do not support.
+  sampleVariogram <- utop_as_variogram_df(sampleVariogram)
   params_obj <- utop_require_params(params, observations = observations)
   askpar <- par("ask")
   if (dev.interactive()) {

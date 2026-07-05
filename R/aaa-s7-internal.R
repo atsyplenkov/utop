@@ -231,6 +231,21 @@ utop_variogram_data <- function(object) {
   stop("expected a UtopVariogram or UtopVariogramCloud object", call. = FALSE)
 }
 
+# Coerce any variogram-like input (S7 UtopVariogram[UtopVariogramCloud], a
+# tagged data.frame, or a plain data.frame) to a plain data.frame. Used at
+# boundaries that consume variograms with S3 `$` / `[` access, which S7 objects
+# do not support. NULL passes through unchanged.
+#' @noRd
+utop_as_variogram_df <- function(x) {
+  if (is.null(x)) {
+    return(NULL)
+  }
+  if (S7::S7_inherits(x, UtopVariogram) || S7::S7_inherits(x, UtopVariogramCloud)) {
+    x <- x@data
+  }
+  as.data.frame(x)
+}
+
 #' @noRd
 utop_support_bbox <- function(observations, prediction_locations = NULL) {
   if (is.null(prediction_locations)) {
