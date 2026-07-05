@@ -240,7 +240,9 @@ utop_as_variogram_df <- function(x) {
   if (is.null(x)) {
     return(NULL)
   }
-  if (S7::S7_inherits(x, UtopVariogram) || S7::S7_inherits(x, UtopVariogramCloud)) {
+  if (
+    S7::S7_inherits(x, UtopVariogram) || S7::S7_inherits(x, UtopVariogramCloud)
+  ) {
     x <- x@data
   }
   as.data.frame(x)

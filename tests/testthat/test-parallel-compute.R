@@ -38,14 +38,21 @@ parallel_params <- function(...) {
 # discretisation is reproducible across serial/parallel comparisons.
 with_clean_cluster <- function(expr, seed = 42) {
   old <- getOption("utop.cluster")
-  if (!is.null(old)) parallel::stopCluster(old)
+  if (!is.null(old)) {
+    parallel::stopCluster(old)
+  }
   options(utop.cluster = NULL)
   set.seed(seed)
-  on.exit({
-    cur <- getOption("utop.cluster")
-    if (!is.null(cur)) parallel::stopCluster(cur)
-    options(utop.cluster = old)
-  }, add = TRUE)
+  on.exit(
+    {
+      cur <- getOption("utop.cluster")
+      if (!is.null(cur)) {
+        parallel::stopCluster(cur)
+      }
+      options(utop.cluster = old)
+    },
+    add = TRUE
+  )
   force(expr)
 }
 
@@ -118,21 +125,27 @@ test_that("parallel discretisation (compute_disc_sf) matches serial", {
   # The parallel branch of compute_disc_sf uses clusterExport + clusterApply
   # with lfun carried as a closure. Discretisation point counts per area must
   # match exactly between serial and parallel (deterministic given same seed).
-  serial <- with_clean_cluster(
-    utop_disc(fix$observations, params = utop_params(r_resol = 100, debug_level = -1))
-  )
-  par <- with_clean_cluster(
-    utop_disc(fix$observations, params = parallel_params(r_resol = 100))
-  )
+  serial <- with_clean_cluster(utop_disc(
+    fix$observations,
+    params = utop_params(r_resol = 100, debug_level = -1)
+  ))
+  par <- with_clean_cluster(utop_disc(
+    fix$observations,
+    params = parallel_params(r_resol = 100)
+  ))
 
   expect_length(par, nrow(fix$observations))
   expect_length(serial, nrow(fix$observations))
 
   serial_lens <- vapply(
-    serial, function(x) nrow(utop_point_coordinates(x)), integer(1)
+    serial,
+    function(x) nrow(utop_point_coordinates(x)),
+    integer(1)
   )
   par_lens <- vapply(
-    par, function(x) nrow(utop_point_coordinates(x)), integer(1)
+    par,
+    function(x) nrow(utop_point_coordinates(x)),
+    integer(1)
   )
   expect_identical(par_lens, serial_lens)
   expect_true(all(par_lens > 0))
