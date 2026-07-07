@@ -8,8 +8,8 @@ r_source_dir <- function() {
 
 skip_if_no_source <- function() {
   testthat::skip_if_not(
-    dir.exists(r_source_dir()),
-    "Package source tree unavailable"
+    file.exists(file.path(r_source_dir(), "utop-package.R")),
+    "Package source files unavailable"
   )
 }
 
