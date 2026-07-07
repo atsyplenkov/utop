@@ -1,6 +1,7 @@
 .Rprofile
 .Renviron
 .R/
+.env
 
 # Build artifacts
 src/*.o
